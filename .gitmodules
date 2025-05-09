@@ -68,3 +68,6 @@
 [submodule "3party/healpix/cfitsio"]
 	path = 3party/healpix/cfitsio
 	url = https://github.com/HEASARC/cfitsio.git
+[submodule "3party/healpix/libsharp"]
+	path = 3party/healpix/libsharp
+	url = https://github.com/Libsharp/libsharp.git

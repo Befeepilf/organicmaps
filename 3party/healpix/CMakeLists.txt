@@ -32,9 +32,46 @@ set(SRC
 )
 
 set(TESTS OFF)
+
+include(ExternalProject)
+
+# ---- Integration of libsharp build ----
+set(libsharp_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libsharp)
+set(libsharp_ARTIFACT_DIR ${libsharp_SOURCE_DIR}/auto) # Default output location for libsharp
+
+ExternalProject_Add(libsharp_build_step
+  SOURCE_DIR ${libsharp_SOURCE_DIR} # Location of libsharp sources
+  CONFIGURE_COMMAND sh -c "autoconf && autoupdate && ./configure" # Configure libsharp
+  BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} default # Build libsharp (default target includes hdrcopy)
+  INSTALL_COMMAND "" # No separate install step, artifacts are in libsharp_ARTIFACT_DIR
+  BUILD_IN_SOURCE 1  # Indicates that the build happens in the source directory
+  BUILD_BYPRODUCTS # Helps CMake track when libsharp is built
+    "${libsharp_ARTIFACT_DIR}/lib/libsharp.a"
+    "${libsharp_ARTIFACT_DIR}/lib/libfftpack.a"
+    "${libsharp_ARTIFACT_DIR}/lib/libc_utils.a"
+    "${libsharp_ARTIFACT_DIR}/include/sharp.h" # Assuming sharp.h is a key header
+)
+
+# Create an interface library to represent the built libsharp
+add_library(sharp_libs INTERFACE)
+target_include_directories(sharp_libs INTERFACE "${libsharp_ARTIFACT_DIR}/include")
+target_link_libraries(sharp_libs INTERFACE
+  "${libsharp_ARTIFACT_DIR}/lib/libsharp.a"
+  "${libsharp_ARTIFACT_DIR}/lib/libfftpack.a"
+  "${libsharp_ARTIFACT_DIR}/lib/libc_utils.a"
+)
+
+# Ensure libsharp is built before anything tries to use sharp_libs
+add_dependencies(sharp_libs libsharp_build_step)
+
+set(SHARP_LIBRARY_NAME sharp_libs)
+# ---- End of libsharp integration ----
+
 add_subdirectory(cfitsio)
+set_property(TARGET cfitsio PROPERTY UNITY_BUILD OFF)
 
 add_library(${PROJECT_NAME} ${SRC})
 
 target_include_directories(${PROJECT_NAME} PUBLIC healpix/src/cxx/cxxsupport healpix/src/cxx/Healpix_cxx)
-target_link_libraries(${PROJECT_NAME} PUBLIC cfitsio)
+# Link healpix against cfitsio and the imported libsharp
+target_link_libraries(${PROJECT_NAME} PUBLIC cfitsio ${SHARP_LIBRARY_NAME})

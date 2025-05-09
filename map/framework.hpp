@@ -3,6 +3,7 @@
 #include "map/api_mark_point.hpp"
 #include "map/bookmark.hpp"
 #include "map/bookmark_manager.hpp"
+#include "map/earth_chunk_manager.hpp"
 #include "map/features_fetcher.hpp"
 #include "map/isolines_manager.hpp"
 #include "map/mwm_url.hpp"
@@ -171,6 +172,8 @@ protected:
 
   location::TMyPositionModeChanged m_myPositionListener;
 
+  std::unique_ptr<EarthChunkManager> m_earthChunkManager;
+
   std::unique_ptr<BookmarkManager> m_bmManager;
 
   SearchMarks m_searchMarks;
@@ -262,6 +265,8 @@ public:
   SearchAPI & GetSearchAPI();
   SearchAPI const & GetSearchAPI() const;
 
+  void LoadEarthChunks();
+
   /// @name Bookmarks, Tracks and other UserMarks
   /// Scans and loads all kml files with bookmarks in WritableDir.
   void LoadBookmarks();
@@ -279,6 +284,9 @@ public:
   void ShowBookmarkCategory(kml::MarkGroupId categoryId, bool animation = true);
 
   void AddBookmarksFile(std::string const & filePath, bool isTemporaryFile);
+
+  EarthChunkManager & GetEarthChunkManager();
+  EarthChunkManager const & GetEarthChunkManager() const;
 
   BookmarkManager & GetBookmarkManager();
   BookmarkManager const & GetBookmarkManager() const;
