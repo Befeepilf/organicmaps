@@ -146,7 +146,7 @@ else() # neither iPhone nor Android
       platform_win.cpp
       secure_storage_dummy.cpp
     )
-  elseif(${PLATFORM_MAC})
+  elseif(PLATFORM_MAC)
     append(SRC
       apple_location_service.mm
       gui_thread_apple.mm
@@ -200,14 +200,17 @@ target_link_libraries(${PROJECT_NAME}
   $<$<BOOL:${PLATFORM_LINUX}>:Qt6::Network>
   $<$<BOOL:${PLATFORM_WIN}>:Qt6::Network>
   $<$<BOOL:${QT_POSITIONING}>:Qt6::Positioning>
-  $<$<BOOL:${PLATFORM_MAC}>:
-    -framework\ Foundation
-    -framework\ SystemConfiguration
-    -framework\ CoreLocation
-    -framework\ CFNetwork
-    -framework\ Security  # SecPKCS12Import
-    >
 )
+
+if(PLATFORM_MAC)
+  target_link_libraries(${PROJECT_NAME} PRIVATE
+    "-framework Foundation"
+    "-framework SystemConfiguration"
+    "-framework CoreLocation"
+    "-framework CFNetwork"
+    "-framework Security"  # SecPKCS12Import
+  )
+endif()
 
 omim_add_test_subdirectory(platform_tests_support)
 omim_add_test_subdirectory(platform_tests)

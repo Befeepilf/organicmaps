@@ -151,7 +151,7 @@ set_source_files_properties(drules_struct.pb.cc PROPERTIES COMPILE_FLAGS
 
 file(COPY ${OTHER_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 
-omim_add_library(${PROJECT_NAME} ${SRC})
+omim_add_library(${PROJECT_NAME} STATIC ${SRC})
 
 target_link_libraries(${PROJECT_NAME}
   search  # search::DummyRankTable in CachingRankTableLoader

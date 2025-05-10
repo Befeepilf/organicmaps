@@ -332,6 +332,8 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
   InitSearchAPI(params.m_numSearchAPIThreads);
   LOG(LDEBUG, ("Search API initialized, part 1"));
 
+  m_earthChunkManager = make_unique<EarthChunkManager>(m_drapeApi);
+
   m_bmManager = make_unique<BookmarkManager>(BookmarkManager::Callbacks(
       [this]() -> StringsBundle const & { return m_stringsBundle; },
       [this]() -> SearchAPI & { return GetSearchAPI(); },
@@ -519,6 +521,9 @@ void Framework::LoadMapsAsync(std::function<void()> && callback)
     GetSearchAPI().InitAfterWorldLoaded();
     LOG(LDEBUG, ("Search API initialized, part 2, after World was loaded"));
 
+    LoadEarthChunks();
+    LOG(LDEBUG, ("Earth chunks initialized"));
+
     GetPlatform().RunTask(Platform::Thread::Gui, [this, &editor, callback = std::move(callback)]()
     {
       editor.LoadEdits();
@@ -546,6 +551,11 @@ void Framework::DeregisterAllMaps()
 {
   m_featuresFetcher.Clear();
   m_storage.Clear();
+}
+
+void Framework::LoadEarthChunks()
+{
+  GetEarthChunkManager().LoadEarthChunks();
 }
 
 void Framework::LoadBookmarks()
@@ -1955,6 +1965,18 @@ osm::MapObject Framework::GetMapObjectByID(FeatureID const & fid) const
   if (ft)
     res.SetFromFeatureType(*ft);
   return res;
+}
+
+EarthChunkManager & Framework::GetEarthChunkManager()
+{
+  ASSERT(m_earthChunkManager != nullptr, ("Earth chunk manager is not initialized."));
+  return *m_earthChunkManager.get();
+}
+
+EarthChunkManager const & Framework::GetEarthChunkManager() const
+{
+  ASSERT(m_earthChunkManager != nullptr, ("Earth chunk manager is not initialized."));
+  return *m_earthChunkManager.get();
 }
 
 BookmarkManager & Framework::GetBookmarkManager()
