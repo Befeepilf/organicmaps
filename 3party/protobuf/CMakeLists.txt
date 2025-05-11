@@ -36,6 +36,10 @@ if(NOT PLATFORM_WIN)
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_PTHREAD)
 endif ()
 
+if(PLATFORM_ANDROID)
+  target_link_libraries(${PROJECT_NAME} PRIVATE log)
+endif()
+
 target_compile_options(${PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:AppleClang,Clang>:-Wno-shorten-64-to-32>
   $<$<CXX_COMPILER_ID:AppleClang,Clang,GNU>:-Wno-deprecated-declarations>

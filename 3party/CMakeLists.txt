@@ -64,6 +64,9 @@ add_subdirectory(succinct)
 
 add_subdirectory(vulkan_wrapper)
 
+add_subdirectory(healpix)
+add_library(healpix::healpix ALIAS healpix)
+
 if (PLATFORM_DESKTOP)
   add_subdirectory(libtess2)
 
