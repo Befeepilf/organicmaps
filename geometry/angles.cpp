@@ -15,6 +15,9 @@ double AngleIn2PI(double ang)
   return ang;
 }
 
+double constexpr kDegreesInRadian = 180.0 / math::pi;
+double RadToDeg(double rad) { return rad * kDegreesInRadian; }
+
 double GetShortestDistance(double rad1, double rad2)
 {
   double constexpr period = 2.0 * math::pi;
