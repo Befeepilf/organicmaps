@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(organicmaps C CXX)
 
+find_package(OpenMP REQUIRED)
+
 set(SRC
   # JNI headers
   ../../../../../private.h
@@ -86,6 +88,10 @@ omim_add_library(${PROJECT_NAME} SHARED ${SRC})
 
 target_include_directories(${PROJECT_NAME} PRIVATE .)
 
+if(OpenMP_FOUND)
+  target_compile_options(${PROJECT_NAME} PRIVATE ${OpenMP_CXX_FLAGS})
+endif()
+
 target_link_libraries(${PROJECT_NAME}
   # Organic Maps libs
   map
@@ -130,6 +136,9 @@ target_link_libraries(${PROJECT_NAME}
   GLESv2
   atomic
   z
+  # if(OpenMP_FOUND)
+  OpenMP::OpenMP_CXX
+  # endif()
 )
 
 #target_link_options(${PROJECT_NAME} PRIVATE "-fuse-ld=gold")

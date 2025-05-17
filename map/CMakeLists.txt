@@ -14,6 +14,8 @@ set(SRC
   bookmarks_search_params.hpp
   chart_generator.cpp
   chart_generator.hpp
+  earth_chunk_manager.cpp
+  earth_chunk_manager.hpp
   elevation_info.cpp
   elevation_info.hpp
   everywhere_search_callback.cpp
@@ -96,6 +98,7 @@ target_link_libraries(${PROJECT_NAME}
   ge0
   drape_frontend
   agg
+  healpix
 )
 
 omim_add_test_subdirectory(map_integration_tests)
