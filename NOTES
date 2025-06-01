@@ -1,0 +1,47 @@
+### Useful stuff
+
+#define COUNTRIES_FILE "countries.txt"
+
+- When Storage class is constructed, countries are loaded
+- search/model.hpp TYPE_STREET
+
+For segmentization:
+Point<T> PointAtSegment(Point<T> const & p1, Point<T> const & p2, T shiftFromP1)
+
+
+void Storage::DownloadNode(CountryId const & countryId, bool isUpdate /* = false */)
+void Storage::DownloadCountry(CountryId const & countryId, MapFileType type)
+void Storage::RegisterDownloadedFiles(CountryId const & countryId, MapFileType type)
+void Storage::RegisterCountryFiles(LocalFilePtr localFile)
+int Storage::Subscribe(ChangeCountryFunction change, ProgressFunction progress)
+  void OnCountryFileDownloaded(storage::CountryId const & countryId, storage::LocalFilePtr const localFile);
+
+
+
+
+  void ForEachInRect(m2::RectD const & rect, std::function<void(FeatureType &)> const & fn)
+
+
+
+  // Returns country file name without an extension for a country |pt|
+  // belongs to. If there is no such country, returns an empty
+  // string.
+  CountryId GetRegionCountryId(m2::PointD const & pt) const;
+
+  // Returns identifier of the first country containing |pt| or |kInvalidId| if there is none.
+  RegionId FindFirstCountry(m2::PointD const & pt) const;
+
+  // Returns vector of countries file names without extension for
+  // countries belonging to |rect|. When |rough| is equal to true, the
+  // method is much faster but the result is less precise.
+  std::vector<CountryId> GetRegionsCountryIdByRect(m2::RectD const & rect, bool rough) const;
+
+  // Returns a list of country ids by a |pt| in mercator.
+  // |closestCoutryIds| is filled with country ids of mwms that cover |pt| or are close to it
+  // with the exception of World.mwm and custom user-provided mwms.
+  // The result may be empty, for example if |pt| is somewhere in an ocean.
+  void GetRegionsCountryId(m2::PointD const & pt, CountriesVec & closestCoutryIds,
+                           double lookupRadiusM = 30000.0 /* 30 km */) const;
+
+  // Fills info for the region |pt| belongs to.
+  void GetRegionInfo(m2::PointD const & pt, CountryInfo & info) const;

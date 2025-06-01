@@ -274,6 +274,7 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
   , m_popularityLoader(m_featuresFetcher.GetDataSource(), POPULARITY_RANKS_FILE_TAG)
   , m_descriptionsLoader(std::make_unique<descriptions::Loader>(m_featuresFetcher.GetDataSource()))
   , m_earthChunkManager(std::make_unique<EarthChunkManager>())
+  , m_streetPixelManager(std::make_unique<StreetPixelManager>())
 {
   // Editor should be initialized from the main thread to set its ThreadChecker.
   // However, search calls editor upon initialization thus setting the lazy editor's ThreadChecker
@@ -315,16 +316,29 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
 
   m_bmManager = make_unique<BookmarkManager>(BookmarkManager::Callbacks(
     [this]() -> StringsBundle const & { return m_stringsBundle; }, [this]() -> SearchAPI & { return GetSearchAPI(); },
-    [this](vector<BookmarkInfo> const & marks) { GetSearchAPI().OnBookmarksCreated(marks); },
-    [this](vector<BookmarkInfo> const & marks) { GetSearchAPI().OnBookmarksUpdated(marks); },
+    [this](vector<BookmarkInfo> const & marks)
+    {
+      LOG(LINFO, ("Bookmarks created", marks.size()));
+      GetSearchAPI().OnBookmarksCreated(marks);
+    },
+    [this](vector<BookmarkInfo> const & marks)
+    {
+      LOG(LINFO, ("Bookmarks updated", marks.size()));
+      GetSearchAPI().OnBookmarksUpdated(marks);
+    },
     [this](vector<kml::MarkId> const & marks) { GetSearchAPI().OnBookmarksDeleted(marks); },
-    [this](vector<BookmarkGroupInfo> const & marks) { GetSearchAPI().OnBookmarksAttached(marks); },
+    [this](vector<BookmarkGroupInfo> const & marks)
+    {
+      LOG(LINFO, ("Bookmarks attached", marks.size()));
+      GetSearchAPI().OnBookmarksAttached(marks);
+    },
     [this](vector<BookmarkGroupInfo> const & marks) { GetSearchAPI().OnBookmarksDetached(marks); }));
 
   m_bmManager->InitRegionAddressGetter(m_featuresFetcher.GetDataSource(), *m_infoGetter);
 
   m_routingManager.SetBookmarkManager(m_bmManager.get());
   m_searchMarks.SetBookmarkManager(m_bmManager.get());
+  m_streetPixelManager->SetBookmarkManager(m_bmManager.get());
 
   m_routingManager.SetTransitManager(&m_transitManager);
 
@@ -532,6 +546,15 @@ void Framework::DeregisterAllMaps()
 void Framework::LoadBookmarks() { GetBookmarkManager().LoadBookmarks(); }
 
 void Framework::LoadEarthChunks() { GetEarthChunkManager().LoadEarthChunks(); }
+
+void Framework::LoadStreetPixels()
+{
+  auto const & realLocalMaps = GetStorage().GetRealLocalMaps();
+  for (auto const & [countryId, localFile] : realLocalMaps)
+  {
+    GetStreetPixelManager().LoadStreetPixelsForRegion(countryId, localFile);
+  }
+}
 
 kml::MarkGroupId Framework::AddCategory(string const & categoryName)
 {
@@ -1528,6 +1551,7 @@ void Framework::CreateDrapeEngine(ref_ptr<dp::GraphicsContextFactory> contextFac
     GpsTracker::Instance().Connect(bind(&Framework::OnUpdateGpsTrackPointsCallback, this, _1, _2, _3));
 
   GetBookmarkManager().SetDrapeEngine(make_ref(m_drapeEngine));
+  GetStreetPixelManager().SetDrapeEngine(make_ref(m_drapeEngine));
   m_drapeApi.SetDrapeEngine(make_ref(m_drapeEngine));
   GetEarthChunkManager().SetDrapeApi(make_ref(&m_drapeApi));
   m_routingManager.SetDrapeEngine(make_ref(m_drapeEngine), allow3d);
@@ -1551,6 +1575,7 @@ void Framework::CreateDrapeEngine(ref_ptr<dp::GraphicsContextFactory> contextFac
   benchmark::RunGraphicsBenchmark(this);
 
   GetEarthChunkManager().LoadEarthChunks();
+  LoadStreetPixels();
 }
 
 void Framework::OnRecoverSurface(int width, int height, bool recreateContextDependentResources)
@@ -1596,6 +1621,7 @@ void Framework::DestroyDrapeEngine()
     m_isolinesManager.SetDrapeEngine(nullptr);
     m_searchMarks.SetDrapeEngine(nullptr);
     GetBookmarkManager().SetDrapeEngine(nullptr);
+    GetStreetPixelManager().SetDrapeEngine(nullptr);
 
     m_trafficManager.Teardown();
     GpsTracker::Instance().Disconnect();
@@ -1877,6 +1903,18 @@ EarthChunkManager const & Framework::GetEarthChunkManager() const
 {
   ASSERT(m_earthChunkManager != nullptr, ("Earth chunk manager is not initialized."));
   return *m_earthChunkManager.get();
+}
+
+StreetPixelManager & Framework::GetStreetPixelManager()
+{
+  ASSERT(m_streetPixelManager != nullptr, ("Street pixel manager is not initialized."));
+  return *m_streetPixelManager.get();
+}
+
+StreetPixelManager const & Framework::GetStreetPixelManager() const
+{
+  ASSERT(m_streetPixelManager != nullptr, ("Street pixel manager is not initialized."));
+  return *m_streetPixelManager.get();
 }
 
 void Framework::SetPlacePageListeners(PlacePageEvent::OnOpen onOpen, PlacePageEvent::OnClose onClose,
