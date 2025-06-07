@@ -79,6 +79,14 @@ void ColoredMarkPoint::SetRadius(float radius)
   m_coloredSymbols.m_zoomInfo.begin()->second.m_radiusInPixels = radius * vs;
 }
 
+void ColoredMarkPoint::SetOutlineWidth(float width)
+{
+  SetDirty();
+
+  auto const vs = static_cast<float>(df::VisualParams::Instance().GetVisualScale());
+  m_coloredSymbols.m_zoomInfo.begin()->second.m_outlineWidth = width * vs;
+}
+
 drape_ptr<df::UserPointMark::ColoredSymbolZoomInfo> ColoredMarkPoint::GetColoredSymbols() const
 {
   return make_unique_dp<ColoredSymbolZoomInfo>(m_coloredSymbols);

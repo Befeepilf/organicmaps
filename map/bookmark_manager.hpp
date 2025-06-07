@@ -431,6 +431,8 @@ public:
   std::string GenerateTrackRecordingName() const;
   dp::Color GenerateTrackRecordingColor() const;
 
+  void ForEachTrack(std::function<void(Track const &)> const & fn) const;
+
 private:
   class MarksChangesTracker : public df::UserMarksProvider
   {

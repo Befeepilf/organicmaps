@@ -503,6 +503,13 @@ Track * BookmarkManager::GetTrackForEdit(kml::TrackId trackId)
   return it->second.get();
 }
 
+void BookmarkManager::ForEachTrack(std::function<void(Track const &)> const & fn) const
+{
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+  for (auto const & kv : m_tracks)
+    fn(*kv.second);
+}
+
 void BookmarkManager::MoveTrack(kml::TrackId trackID, kml::MarkGroupId curGroupID, kml::MarkGroupId newGroupID)
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());

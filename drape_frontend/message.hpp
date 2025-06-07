@@ -62,6 +62,8 @@ public:
     CacheCirclesPack,
     UpdateGpsTrackPoints,
     ClearGpsTrackPoints,
+    UpdateStreetPixels,
+    ClearStreetPixels,
     ShowChoosePositionMark,
     SetKineticScrollEnabled,
     BlockTapEvents,

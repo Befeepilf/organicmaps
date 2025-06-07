@@ -243,7 +243,7 @@ void Framework::OnViewportChanged(ScreenBase const & screen)
   m_currentModelView = screen;
 
   GetSearchAPI().OnViewportChanged(GetCurrentViewport());
-
+  GetStreetPixelManager().OnViewportChanged(GetCurrentViewport());
   GetBookmarkManager().UpdateViewport(m_currentModelView);
   m_trafficManager.UpdateViewport(m_currentModelView);
   m_transitManager.UpdateViewport(m_currentModelView);
@@ -549,11 +549,8 @@ void Framework::LoadEarthChunks() { GetEarthChunkManager().LoadEarthChunks(); }
 
 void Framework::LoadStreetPixels()
 {
-  auto const & realLocalMaps = GetStorage().GetRealLocalMaps();
-  for (auto const & [countryId, localFile] : realLocalMaps)
-  {
-    GetStreetPixelManager().LoadStreetPixelsForRegion(countryId, localFile);
-  }
+  auto const & localMaps = GetStorage().GetRealLocalMaps();
+  GetStreetPixelManager().LoadStreetPixels(localMaps);
 }
 
 kml::MarkGroupId Framework::AddCategory(string const & categoryName)

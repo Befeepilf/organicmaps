@@ -149,6 +149,7 @@ public:
 
   void SetColor(dp::Color const & color);
   void SetRadius(float radius);
+  void SetOutlineWidth(float width);
   bool SymbolIsPOI() const override { return true; }
   drape_ptr<SymbolNameZoomInfo> GetSymbolNames() const override { return nullptr; }
   drape_ptr<ColoredSymbolZoomInfo> GetColoredSymbols() const override;

@@ -55,8 +55,6 @@ void EarthChunkManager::LoadEarthChunks()
   bool have_sth;
   for (int64 ipix = 0; ipix < npix; ++ipix)
   {
-    LOG(LINFO, ("Processing chunk", ipix, "of", npix));
-
     points.clear();
     points.resize(4);
 
@@ -106,7 +104,6 @@ void EarthChunkManager::LoadEarthChunks()
 
     if (!crossesDateline)
     {
-      LOG(LINFO, ("Adding line with id:", baseId));
       addLine(baseId, points);
     }
     else
