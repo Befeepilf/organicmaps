@@ -85,16 +85,14 @@ void StreetPixelManager::LoadStreetPixelsForRegion(storage::CountryId const & co
     return;
   }
 
-  std::vector<std::int64_t> streetPixels;
-
+  std::vector<df::StreetPixelPoint> streetPixels;
   std::string filePath = GetPlatform().WritablePathForFile(countryId + ".pix");
-
   try
   {
     LOG(LINFO, ("Trying to load existing pix file for", countryId));
     base::FileData file(filePath, base::FileData::Op::READ);
     size_t const fileSizeBytes = file.Size();
-    streetPixels.resize(fileSizeBytes / 8);
+    streetPixels.resize(fileSizeBytes / sizeof(df::StreetPixelPoint));
     file.Read(0, streetPixels.data(), fileSizeBytes);
     LOG(LINFO, ("Loaded", streetPixels.size(), "pixels for", countryId));
   }
@@ -109,20 +107,33 @@ void StreetPixelManager::LoadStreetPixelsForRegion(storage::CountryId const & co
     std::string const mwmPath = localFile->GetPath(MapFileType::Map);
     FeaturesVectorTest featuresVector(mwmPath);
     DeriveStreetPixelsFromFeatures(featuresVector, streetPixels);
-
+    LOG(LINFO, ("Saving street pixels to file"));
     std::unique_ptr<FileWriter> writer(new FileWriter(filePath, FileWriter::OP_WRITE_TRUNCATE));
-    writer->Write(streetPixels.data(), streetPixels.size() * sizeof(std::int64_t));
+    writer->Write(streetPixels.data(), streetPixels.size() * sizeof(df::StreetPixelPoint));
     writer->Flush();
     writer.reset();
   }
 
-  AddPixels(streetPixels);
+  AddPixels(countryId, streetPixels);
 
   LOG(LINFO, ("Done."));
 }
 
+void StreetPixelManager::SaveStreetPixelsToFile()
+{
+  for (auto const & [countryId, pixels] : m_countryStreetPixels)
+  {
+    LOG(LINFO, ("Saving street pixels for", countryId));
+
+    std::string filePath = GetPlatform().WritablePathForFile(countryId + ".pix");
+    std::unique_ptr<FileWriter> writer(new FileWriter(filePath, FileWriter::OP_WRITE_TRUNCATE));
+    writer->Write(pixels.data(), pixels.size() * sizeof(std::int64_t));
+    writer->Flush();
+  }
+}
+
 void StreetPixelManager::DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector,
-                                                        std::vector<std::int64_t> & streetPixels)
+                                                        std::vector<df::StreetPixelPoint> & streetPixels)
 {
   std::vector<m2::PointD> points;
   Classificator & c = classif();
@@ -182,195 +193,43 @@ void StreetPixelManager::DeriveStreetPixelsFromFeatures(FeaturesVectorTest & fea
       }
     });
 
+  std::unordered_set<std::int64_t> streetPixelIds;
+  streetPixelIds.reserve(points.size());
   for (auto const & point : points)
   {
     auto const latlon = mercator::ToLatLon(point);
     double const lat_rad = base::DegToRad(latlon.m_lat);
     double const lon_rad = base::DegToRad(latlon.m_lon);
     pointing ptg(acos(0.0) - lat_rad, lon_rad);
-    streetPixels.emplace_back(m_healpixBase.ang2pix(ptg));
+    int64_t const pixelId = m_healpixBase.ang2pix(ptg);
+    if (streetPixelIds.count(pixelId) > 0)
+      // avoid duplicates
+      continue;
+    streetPixels.emplace_back(pixelId, point.x, point.y, false);
+    streetPixelIds.insert(pixelId);
   }
 
-  std::vector<std::int64_t>::iterator ip = std::unique(streetPixels.begin(), streetPixels.end());
-  streetPixels.resize(std::distance(streetPixels.begin(), ip));  // remove duplicates
   LOG(LINFO, ("Found", streetPixels.size(), "street pixels for", numStreets, "streets"));
 }
 
-void StreetPixelManager::AddPixels(std::vector<std::int64_t> const & streetPixels)
-{
-  m_allStreetPixels.insert(streetPixels.begin(), streetPixels.end());
-  size_t const potentialSize = m_allStreetPixels.size() * sizeof(df::StreetPixelPoint);
-  LOG(LINFO, ("Loaded", m_allStreetPixels.size(), "total street pixels with potential size", potentialSize, "bytes"));
-}
-
-void StreetPixelManager::OnViewportChanged(m2::RectD const & rect)
+void StreetPixelManager::AddPixels(storage::CountryId const & countryId,
+                                   std::vector<df::StreetPixelPoint> & streetPixels)
 {
   {
-    std::lock_guard<std::mutex> lock(m_viewportMutex);
-    m_viewportRect = rect;
-    m_viewportUpdatedAt = std::chrono::steady_clock::now();
-  }
-
-  bool expected = false;
-  if (m_viewportUpdateInProgress.compare_exchange_strong(expected, true))
-  {
-    GetPlatform().RunTask(Platform::Thread::Background, [this] { this->UpdateViewportTask(); });
-  }
-  else
-  {
-    LOG(LINFO, ("Not updating viewport pixels because update already in progress"));
-  }
-}
-
-void StreetPixelManager::UpdateViewportTask()
-{
-  m2::RectD rect;
-  std::chrono::steady_clock::time_point viewportUpdatedAt;
-  {
-    std::lock_guard<std::mutex> lock(m_viewportMutex);
-    rect = m_viewportRect;
-    viewportUpdatedAt = m_viewportUpdatedAt;
-  }
-
-  if (m_allStreetPixels.empty())
-  {
-    LOG(LINFO, ("Not updating viewport pixels because no pixels are loaded"));
-    m_viewportUpdateInProgress = false;
-    return;
-  }
-
-  LOG(LINFO, ("On viewport changed"));
-
-  while (true)
-  {
-    while (std::chrono::steady_clock::now() - viewportUpdatedAt < std::chrono::seconds(1))
+    std::lock_guard<std::mutex> lock(m_pixelsMutex);
+    m_countryStreetPixels[countryId].resize(streetPixels.size());
+    for (auto const streetPixel : streetPixels)
     {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      {
-        std::lock_guard<std::mutex> lock(m_viewportMutex);
-        viewportUpdatedAt = m_viewportUpdatedAt;
-      }
-    }
-
-    std::vector<pointing> corners;
-    double minLat = M_PI;
-    double maxLat = 0;
-    double minLon = M_PI;
-    double maxLon = -M_PI;
-    rect.ForEachCorner(
-      [&](m2::PointD const & point)
-      {
-        auto const latlon = mercator::ToLatLon(point);
-        double const lat_rad = base::DegToRad(latlon.m_lat);
-        double const lon_rad = base::DegToRad(latlon.m_lon);
-        minLat = std::min(minLat, lat_rad);
-        maxLat = std::max(maxLat, lat_rad);
-        minLon = std::min(minLon, lon_rad);
-        maxLon = std::max(maxLon, lon_rad);
-        LOG(LINFO, ("Adding corner", M_PI_2 - lat_rad, lon_rad));
-        corners.emplace_back(pointing(M_PI_2 - lat_rad, lon_rad));
-      });
-
-    if (maxLat - minLat > 0.0012 || maxLon - minLon > 0.0012)
-    {
-      LOG(LINFO, ("Too large rect:", "lat diff:", maxLat - minLat, "lon diff:", maxLon - minLon));
-      std::vector<df::StreetPixelPoint> toAdd;
-      std::vector<int64_t> toRemove;
-      {
-        std::lock_guard<std::mutex> lock(m_pixelsMutex);
-        toRemove.assign(m_currentPixels.begin(), m_currentPixels.end());
-        m_currentPixels.clear();
-      }
-      if (!toRemove.empty())
-      {
-        m_drapeEngine.SafeCall(&df::DrapeEngine::UpdateStreetPixels, std::move(toAdd), std::move(toRemove));
-      }
-      m_viewportUpdateInProgress = false;
-      return;
-    }
-
-    LOG(LINFO, ("Querying pixels in rect"));
-    rangeset<std::int64_t> pixelsInRectRange;
-    try
-    {
-      m_healpixBase.query_polygon(corners, pixelsInRectRange);
-    }
-    catch (PlanckError const & e)
-    {
-      LOG(LWARNING, ("Error querying pixels in rect:", e.what()));
-      m_viewportUpdateInProgress = false;
-      return;
-    }
-
-    LOG(LINFO, ("Got", pixelsInRectRange.nval(), "total pixels in rect"));
-
-    std::unordered_set<std::int64_t> visiblePixels;
-    visiblePixels.reserve(pixelsInRectRange.nval());
-    for (tsize i = 0; i < pixelsInRectRange.nranges(); ++i)
-    {
-      std::int64_t const first = pixelsInRectRange.ivbegin(i);
-      std::int64_t const last = pixelsInRectRange.ivend(i);
-      for (std::int64_t pix = first; pix < last; ++pix)
-      {
-        if (m_allStreetPixels.count(pix) > 0)
-          visiblePixels.insert(pix);
-      }
-    }
-
-    LOG(LINFO, ("Got", visiblePixels.size(), "street pixels in rect"));
-
-    std::vector<df::StreetPixelPoint> toAdd;
-    std::vector<int64_t> toRemove;
-
-    {
-      std::lock_guard<std::mutex> lock(m_pixelsMutex);
-      for (auto const & pix : m_currentPixels)
-      {
-        if (visiblePixels.count(pix) == 0)
-          toRemove.push_back(pix);
-      }
-
-      for (auto const & pix : visiblePixels)
-      {
-        if (m_currentPixels.count(pix) == 0)
-        {
-          df::StreetPixelPoint pt;
-          pt.m_pixelId = pix;
-          pointing const ptg = m_healpixBase.pix2ang(pix);
-          double const lat = 90.0 - ang::RadToDeg(ptg.theta);
-          double const lon = ang::RadToDeg(ptg.phi);
-          pt.m_point = mercator::FromLatLon(lat, lon);
-          if (m_exploredPixels.count(pix) > 0)
-            pt.m_color = dp::Color(0, 255, 0, 255);
-          else
-            pt.m_color = dp::Color(255, 0, 0, 255);
-          toAdd.push_back(pt);
-        }
-      }
-    }
-
-    if (!toAdd.empty() || !toRemove.empty())
-    {
-      {
-        std::lock_guard<std::mutex> lock(m_pixelsMutex);
-        for (auto const & pix : toRemove)
-          m_currentPixels.erase(pix);
-        for (auto const & pt : toAdd)
-          m_currentPixels.insert(pt.m_pixelId);
-      }
-      m_drapeEngine.SafeCall(&df::DrapeEngine::UpdateStreetPixels, std::move(toAdd), std::move(toRemove));
-    }
-
-    {
-      std::lock_guard<std::mutex> lock(m_viewportMutex);
-      if (rect == m_viewportRect)
-      {
-        m_viewportUpdateInProgress = false;
-        break;
-      }
-      rect = m_viewportRect;
+      m_allStreetPixels.insert({streetPixel.GetPixelId(), streetPixel});
+      m_countryStreetPixels[countryId].push_back(streetPixel.GetPixelId());
     }
   }
+  std::vector<df::StreetPixelPoint> toRemove;
+  m_drapeEngine.SafeCall(&df::DrapeEngine::UpdateStreetPixels, std::move(streetPixels), std::move(toRemove));
+
+  std::lock_guard<std::mutex> lock(m_pixelsMutex);
+
+  LOG(LINFO, ("Loaded", m_allStreetPixels.size(), "total street pixels"));
 }
 
 void StreetPixelManager::UpdateExploredPixels()
@@ -440,6 +299,8 @@ void StreetPixelManager::UpdateExploredPixels()
                           double constexpr kRadiusRads = kExploreRadiusMeters / kEarthRadiusMeters;
 
                           LOG(LINFO, ("Points:", points.size()));
+
+                          std::vector<df::StreetPixelPoint> toUpdate;
                           for (auto const & point : points)
                           {
                             auto const latlon = mercator::ToLatLon(point);
@@ -448,8 +309,8 @@ void StreetPixelManager::UpdateExploredPixels()
                             pointing ptg(M_PI_2 - lat_rad, lon_rad);
                             int64_t pix = m_healpixBase.ang2pix(ptg);
 
-                            if (m_allStreetPixels.count(pix) > 0)
-                              exploredPixels.insert(pix);
+                            // if (m_allStreetPixels.count(pix) > 0)
+                            //   exploredPixels.insert(pix);
 
                             rangeset<std::int64_t> pixels_in_disc = m_healpixBase.query_disc(ptg, kRadiusRads);
                             for (tsize i = 0; i < pixels_in_disc.nranges(); ++i)
@@ -458,50 +319,54 @@ void StreetPixelManager::UpdateExploredPixels()
                               std::int64_t const last = pixels_in_disc.ivend(i);
                               for (pix = first; pix < last; ++pix)
                               {
-                                if (m_allStreetPixels.count(pix) > 0)
+                                std::lock_guard<std::mutex> lock(m_pixelsMutex);
+                                auto it = m_allStreetPixels.find(pix);
+                                if (it != m_allStreetPixels.end())
+                                {
+                                  it->second.explored = true;
+                                  toUpdate.push_back(it->second);
                                   exploredPixels.insert(pix);
+                                }
                               }
                             }
                           }
 
                           LOG(LINFO, ("Explored pixels:", exploredPixels.size()));
                           LOG(LINFO, ("Swapping explored pixels"));
-                          m_exploredPixels.swap(exploredPixels);
-
-                          LOG(LINFO, ("EXPLORED PCT:", GetExploredFraction()));
-
-                          if (exploredPixels.empty())
-                            return;
-
-                          std::vector<df::StreetPixelPoint> toUpdate;
                           {
                             std::lock_guard<std::mutex> lock(m_pixelsMutex);
-                            for (auto const & pix : m_currentPixels)
-                            {
-                              if (m_exploredPixels.count(pix) > 0)
-                              {
-                                df::StreetPixelPoint pt;
-                                pt.m_pixelId = pix;
-                                pointing const ptg = m_healpixBase.pix2ang(pix);
-                                double const lat = 90.0 - ang::RadToDeg(ptg.theta);
-                                double const lon = ang::RadToDeg(ptg.phi);
-                                pt.m_point = mercator::FromLatLon(lat, lon);
-                                pt.m_color = dp::Color(0, 255, 0, 255);
-                                toUpdate.push_back(pt);
-                              }
-                            }
+                            m_exploredPixels.swap(exploredPixels);
                           }
+
+                          PrintExploredFractions();
+
                           if (!toUpdate.empty())
                           {
+                            SaveStreetPixelsToFile();
+                            std::vector<df::StreetPixelPoint> toRemove;
                             m_drapeEngine.SafeCall(&df::DrapeEngine::UpdateStreetPixels, std::move(toUpdate),
-                                                   std::vector<int64_t>());
+                                                   std::move(toRemove));
                           }
                         });
 }
 
-double StreetPixelManager::GetExploredFraction() const
+void StreetPixelManager::PrintExploredFractions() const
 {
-  if (m_allStreetPixels.empty())
-    return 0.0;
-  return static_cast<double>(m_exploredPixels.size()) / static_cast<double>(m_allStreetPixels.size());
+  for (auto const & [countryId, pixels] : m_countryStreetPixels)
+  {
+    size_t const numExplorablePixels = pixels.size();
+    size_t numExploredPixels = 0;
+    {
+      std::lock_guard<std::mutex> lock(m_pixelsMutex);
+      for (auto const & pixel : pixels)
+      {
+        auto it = m_allStreetPixels.find(pixel);
+        if (it != m_allStreetPixels.end() && it->second.explored)
+          numExploredPixels++;
+      }
+    }
+
+    LOG(LINFO,
+        ("Country:", countryId, "Explored fraction:", static_cast<double>(numExploredPixels) / numExplorablePixels));
+  }
 }

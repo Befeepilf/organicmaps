@@ -978,7 +978,7 @@ public:
 class UpdateStreetPixelsMessage : public Message
 {
 public:
-  UpdateStreetPixelsMessage(std::vector<StreetPixelPoint> && toAdd, std::vector<int64_t> && toRemove)
+  UpdateStreetPixelsMessage(std::vector<StreetPixelPoint> && toAdd, std::vector<StreetPixelPoint> && toRemove)
     : m_toAdd(std::move(toAdd))
     , m_toRemove(std::move(toRemove))
   {}
@@ -986,11 +986,11 @@ public:
   Type GetType() const override { return Type::UpdateStreetPixels; }
 
   std::vector<StreetPixelPoint> const & GetToAdd() const { return m_toAdd; }
-  std::vector<int64_t> const & GetToRemove() const { return m_toRemove; }
+  std::vector<StreetPixelPoint> const & GetToRemove() const { return m_toRemove; }
 
 private:
   std::vector<StreetPixelPoint> m_toAdd;
-  std::vector<int64_t> m_toRemove;
+  std::vector<StreetPixelPoint> m_toRemove;
 };
 
 class ClearStreetPixelsMessage : public Message

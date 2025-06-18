@@ -172,6 +172,7 @@ set(SRC
   selection_shape_generator.cpp
   selection_shape_generator.hpp
   shape_view_params.hpp
+  street_pixel_point.cpp
   street_pixel_point.hpp
   street_pixel_renderer.cpp
   street_pixel_renderer.hpp

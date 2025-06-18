@@ -243,7 +243,6 @@ void Framework::OnViewportChanged(ScreenBase const & screen)
   m_currentModelView = screen;
 
   GetSearchAPI().OnViewportChanged(GetCurrentViewport());
-  GetStreetPixelManager().OnViewportChanged(GetCurrentViewport());
   GetBookmarkManager().UpdateViewport(m_currentModelView);
   m_trafficManager.UpdateViewport(m_currentModelView);
   m_transitManager.UpdateViewport(m_currentModelView);
@@ -400,7 +399,7 @@ void Framework::ShowNode(storage::CountryId const & countryId)
   ShowRect(CalcLimitRect(countryId, GetStorage(), GetCountryInfoGetter()));
 }
 
-void Framework::OnCountryFileDownloaded(storage::CountryId const &, storage::LocalFilePtr const localFile)
+void Framework::OnCountryFileDownloaded(storage::CountryId const & countryId, storage::LocalFilePtr const localFile)
 {
   // Soft reset to signal that mwm file may be out of date in routing caches.
   m_routingManager.ResetRoutingSession();
@@ -421,6 +420,7 @@ void Framework::OnCountryFileDownloaded(storage::CountryId const &, storage::Loc
 
   InvalidateRect(rect);
   GetSearchAPI().ClearCaches();
+  GetStreetPixelManager().LoadStreetPixelsForRegion(countryId, localFile);
 }
 
 bool Framework::OnCountryFileDelete(storage::CountryId const & countryId, storage::LocalFilePtr const localFile)

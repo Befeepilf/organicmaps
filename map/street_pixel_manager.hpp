@@ -39,34 +39,29 @@ public:
 
   void LoadStreetPixelsForRegion(storage::CountryId const & countryId, storage::LocalFilePtr const & localFile);
 
-  void DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector, std::vector<std::int64_t> & streetPixels);
+  void DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector,
+                                      std::vector<df::StreetPixelPoint> & streetPixels);
 
-  void OnViewportChanged(m2::RectD const & rect);
+  void AddPixels(storage::CountryId const & countryId, std::vector<df::StreetPixelPoint> & streetPixels);
 
-  void AddPixels(std::vector<std::int64_t> const & streetPixels);
+  void SaveStreetPixelsToFile();
 
   void UpdateExploredPixels();
-  double GetExploredFraction() const;
+
+  void PrintExploredFractions() const;
 
 private:
-  void UpdateViewportTask();
-
   df::DrapeEngineSafePtr m_drapeEngine;
 
   BookmarkManager * m_bmManager = nullptr;
 
   T_Healpix_Base<std::int64_t> m_healpixBase;
 
-  std::unordered_set<int64_t> m_currentPixels;
   mutable std::mutex m_pixelsMutex;
 
-  std::unordered_set<std::int64_t> m_allStreetPixels;
+  std::unordered_map<storage::CountryId, std::vector<std::int64_t>> m_countryStreetPixels;
+  std::unordered_map<std::int64_t, df::StreetPixelPoint> m_allStreetPixels;
   std::unordered_set<std::int64_t> m_exploredPixels;
   bool m_streetPixelsLoaded = false;
   bool m_tracksLoaded = false;
-
-  std::mutex m_viewportMutex;
-  m2::RectD m_viewportRect;
-  std::chrono::steady_clock::time_point m_viewportUpdatedAt;
-  std::atomic<bool> m_viewportUpdateInProgress{false};
 };

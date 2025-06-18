@@ -11,12 +11,29 @@
 
 #include "geometry/screenbase.hpp"
 
+#include "drape_frontend/tile_utils.hpp"
+
+#include <cstdint>
 #include <functional>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace df
 {
+struct TileKeyHasher
+{
+  size_t operator()(TileKey const & key) const noexcept
+  {
+    // Simple combination of coordinates and zoom level.
+    // We do not include generations because buckets are built on a fixed zoom level.
+    size_t seed = std::hash<int>()(key.m_x);
+    seed ^= std::hash<int>()(key.m_y) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<std::uint8_t>()(key.m_zoomLevel) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+  }
+};
+
 class StreetPixelRenderer final
 {
 public:
@@ -29,7 +46,7 @@ public:
   void Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<gpu::ProgramManager> mng, ScreenBase const & screen,
               int zoomLevel, FrameValues const & frameValues);
 
-  void UpdatePixels(std::vector<StreetPixelPoint> const & toAdd, std::vector<int64_t> const & toRemove);
+  void UpdatePixels(std::vector<StreetPixelPoint> const & toAdd, std::vector<StreetPixelPoint> const & toRemove);
 
   void Update();
   void Clear();
@@ -38,7 +55,8 @@ public:
 private:
   TRenderDataRequestFn m_dataRequestFn;
   std::vector<drape_ptr<CirclesPackRenderData>> m_renderData;
-  std::map<int64_t, StreetPixelPoint> m_points;
+
+  std::unordered_map<TileKey, std::vector<StreetPixelPoint>, TileKeyHasher> m_tileBuckets;
 
   bool m_needUpdate;
   bool m_waitForRenderData;
