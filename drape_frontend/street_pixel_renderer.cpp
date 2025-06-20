@@ -17,19 +17,26 @@ namespace df
 {
 namespace
 {
-int const kMinVisibleZoomLevel = 10;
 uint32_t const kAveragePointsCount = 2048;
+int const kMinVisibleZoomLevel = 9;
 
 // Zoom level used for grouping points into buckets.
 // Must be >= kMinVisibleZoomLevel so that each visible viewport covers limited number of buckets.
 int const kBucketZoomLevel = 15;
+
+// Radius of circles depending on zoom levels.
+std::array<float, 20> const kRadiusInPixel = {
+  // 1   2     3     4     5     6     7     8     9     10
+  0.6f, 0.8f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+  // 11   12    13    14    15    16    17    18    19     20
+  1.0f, 1.0f, 1.0f, 1.5f, 1.5f, 2.0f, 2.0f, 3.0f, 4.0f, 5.5f};
 }  // namespace
 
 StreetPixelRenderer::StreetPixelRenderer(TRenderDataRequestFn const & dataRequestFn)
   : m_dataRequestFn(dataRequestFn)
   , m_needUpdate(false)
   , m_waitForRenderData(false)
-  , m_radius(4.0f)
+  , m_radius(0.0f)
 {}
 
 void StreetPixelRenderer::AddRenderData(ref_ptr<dp::GraphicsContext> context, ref_ptr<gpu::ProgramManager> mng,
@@ -120,8 +127,6 @@ void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<g
     if (m_waitForRenderData)
       return;
 
-    m_pivot = screen.GlobalRect().Center();
-
     ASSERT(!m_renderData.empty(), ());
     m_handlesCache.clear();
     for (size_t i = 0; i < m_renderData.size(); i++)
@@ -133,9 +138,9 @@ void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<g
       m_handlesCache.push_back(std::make_pair(handle, 0));
     }
 
-    // double const currentScaleGtoP = 1.0 / screen.GetScale();
-    // double const radiusMercator = m_radius / currentScaleGtoP;
+    m_radius = CalculateRadius(screen, kRadiusInPixel);
 
+    m_pivot = screen.GlobalRect().Center();
     size_t cacheIndex = 0;
 
     // Determine tiles that intersect the screen clip rect in bucket zoom level.
