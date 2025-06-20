@@ -612,8 +612,7 @@ void DrapeEngine::ClearGpsTrackPoints()
                                   MessagePriority::Normal);
 }
 
-void DrapeEngine::UpdateStreetPixels(std::vector<df::StreetPixelPoint> && toAdd,
-                                     std::vector<df::StreetPixelPoint> && toRemove)
+void DrapeEngine::UpdateStreetPixels(std::vector<df::StreetPixel> && toAdd, std::vector<df::StreetPixel> && toRemove)
 {
   m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread,
                                   make_unique_dp<UpdateStreetPixelsMessage>(std::move(toAdd), std::move(toRemove)),

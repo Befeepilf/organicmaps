@@ -18,7 +18,7 @@
 #include "drape_frontend/route_builder.hpp"
 #include "drape_frontend/route_renderer.hpp"
 #include "drape_frontend/selection_shape.hpp"
-#include "drape_frontend/street_pixel_point.hpp"
+#include "drape_frontend/street_pixel.hpp"
 #include "drape_frontend/tile_utils.hpp"
 #include "drape_frontend/traffic_generator.hpp"
 #include "drape_frontend/transit_scheme_builder.hpp"
@@ -978,19 +978,19 @@ public:
 class UpdateStreetPixelsMessage : public Message
 {
 public:
-  UpdateStreetPixelsMessage(std::vector<StreetPixelPoint> && toAdd, std::vector<StreetPixelPoint> && toRemove)
+  UpdateStreetPixelsMessage(std::vector<StreetPixel> && toAdd, std::vector<StreetPixel> && toRemove)
     : m_toAdd(std::move(toAdd))
     , m_toRemove(std::move(toRemove))
   {}
 
   Type GetType() const override { return Type::UpdateStreetPixels; }
 
-  std::vector<StreetPixelPoint> const & GetToAdd() const { return m_toAdd; }
-  std::vector<StreetPixelPoint> const & GetToRemove() const { return m_toRemove; }
+  std::vector<StreetPixel> const & GetToAdd() const { return m_toAdd; }
+  std::vector<StreetPixel> const & GetToRemove() const { return m_toRemove; }
 
 private:
-  std::vector<StreetPixelPoint> m_toAdd;
-  std::vector<StreetPixelPoint> m_toRemove;
+  std::vector<StreetPixel> m_toAdd;
+  std::vector<StreetPixel> m_toRemove;
 };
 
 class ClearStreetPixelsMessage : public Message

@@ -134,7 +134,6 @@ void EarthChunkManager::LoadEarthChunks()
         auto const & p2 = points[i + 1];
 
         bool const p1East = belongsEast(p1.x);
-        bool const p2East = belongsEast(p2.x);
 
         if (p1East)
           east.push_back(p1);

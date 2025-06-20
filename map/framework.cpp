@@ -269,11 +269,11 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
       static_cast<RoutingManager::Delegate &>(*this))
   , m_trafficManager(bind(&Framework::GetMwmsByRect, this, _1, false /* rough */), kMaxTrafficCacheSizeBytes,
                      m_routingManager.RoutingSession())
+  , m_earthChunkManager(std::make_unique<EarthChunkManager>())
+  , m_streetPixelManager(std::make_unique<StreetPixelManager>())
   , m_lastReportedCountry(kInvalidCountryId)
   , m_popularityLoader(m_featuresFetcher.GetDataSource(), POPULARITY_RANKS_FILE_TAG)
   , m_descriptionsLoader(std::make_unique<descriptions::Loader>(m_featuresFetcher.GetDataSource()))
-  , m_earthChunkManager(std::make_unique<EarthChunkManager>())
-  , m_streetPixelManager(std::make_unique<StreetPixelManager>())
 {
   // Editor should be initialized from the main thread to set its ThreadChecker.
   // However, search calls editor upon initialization thus setting the lazy editor's ThreadChecker

@@ -2,7 +2,7 @@
 
 #include "drape_frontend/circles_pack_shape.hpp"
 #include "drape_frontend/frame_values.hpp"
-#include "drape_frontend/street_pixel_point.hpp"
+#include "drape_frontend/street_pixel.hpp"
 
 #include "shaders/program_manager.hpp"
 
@@ -46,7 +46,7 @@ public:
   void Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<gpu::ProgramManager> mng, ScreenBase const & screen,
               int zoomLevel, FrameValues const & frameValues);
 
-  void UpdatePixels(std::vector<StreetPixelPoint> const & toAdd, std::vector<StreetPixelPoint> const & toRemove);
+  void UpdatePixels(std::vector<StreetPixel> const & toAdd, std::vector<StreetPixel> const & toRemove);
 
   void Update();
   void Clear();
@@ -56,7 +56,7 @@ private:
   TRenderDataRequestFn m_dataRequestFn;
   std::vector<drape_ptr<CirclesPackRenderData>> m_renderData;
 
-  std::unordered_map<TileKey, std::vector<StreetPixelPoint>, TileKeyHasher> m_tileBuckets;
+  std::unordered_map<TileKey, std::vector<StreetPixel>, TileKeyHasher> m_tileBuckets;
 
   bool m_needUpdate;
   bool m_waitForRenderData;

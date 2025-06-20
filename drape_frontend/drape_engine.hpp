@@ -187,7 +187,7 @@ public:
   void UpdateGpsTrackPoints(std::vector<df::GpsTrackPoint> && toAdd, std::vector<uint32_t> && toRemove);
   void ClearGpsTrackPoints();
 
-  void UpdateStreetPixels(std::vector<df::StreetPixelPoint> && toAdd, std::vector<df::StreetPixelPoint> && toRemove);
+  void UpdateStreetPixels(std::vector<df::StreetPixel> && toAdd, std::vector<df::StreetPixel> && toRemove);
 
   void ClearStreetPixels();
 

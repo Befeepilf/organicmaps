@@ -27,7 +27,7 @@ int const kBucketZoomLevel = 15;
 
 StreetPixelRenderer::StreetPixelRenderer(TRenderDataRequestFn const & dataRequestFn)
   : m_dataRequestFn(dataRequestFn)
-  , m_needUpdate(true)
+  , m_needUpdate(false)
   , m_waitForRenderData(false)
   , m_radius(4.0f)
 {}
@@ -40,7 +40,6 @@ void StreetPixelRenderer::AddRenderData(ref_ptr<dp::GraphicsContext> context, re
   data->m_bucket->GetBuffer()->Build(context, program);
   m_renderData.push_back(std::move(data));
   m_waitForRenderData = false;
-  m_needUpdate = true;
 }
 
 void StreetPixelRenderer::ClearRenderData()
@@ -51,25 +50,24 @@ void StreetPixelRenderer::ClearRenderData()
   m_needUpdate = true;
 }
 
-void StreetPixelRenderer::UpdatePixels(std::vector<StreetPixelPoint> const & toAdd,
-                                       std::vector<StreetPixelPoint> const & toRemove)
+void StreetPixelRenderer::UpdatePixels(std::vector<StreetPixel> const & toAdd,
+                                       std::vector<StreetPixel> const & toRemove)
 {
   bool wasChanged = false;
 
-  // Handle removals first.
   if (!toRemove.empty())
   {
-    for (df::StreetPixelPoint point : toRemove)
+    for (auto const & pixel : toRemove)
     {
       // Remove from bucket container as well.
-      TileKey const bucketKey = GetTileKeyByPoint(point, kBucketZoomLevel);
+      TileKey const bucketKey = GetTileKeyByPoint(pixel.GetPoint(), kBucketZoomLevel);
       auto itBucket = m_tileBuckets.find(bucketKey);
       if (itBucket != m_tileBuckets.end())
       {
         auto & vec = itBucket->second;
-        auto const pointId = point.GetPixelId();
+        auto const pixelId = pixel.GetPixelId();
         vec.erase(std::remove_if(vec.begin(), vec.end(),
-                                 [pointId](StreetPixelPoint const & p) { return p.GetPixelId() == pointId; }),
+                                 [pixelId](StreetPixel const & p) { return p.GetPixelId() == pixelId; }),
                   vec.end());
         if (vec.empty())
           m_tileBuckets.erase(itBucket);
@@ -78,22 +76,23 @@ void StreetPixelRenderer::UpdatePixels(std::vector<StreetPixelPoint> const & toA
     wasChanged = true;
   }
 
-  // Handle additions.
   if (!toAdd.empty())
   {
-    for (auto const & pt : toAdd)
+    LOG(LINFO, ("Adding", toAdd.size()));
+    for (auto const & pixel : toAdd)
     {
-      TileKey const bucketKey = GetTileKeyByPoint(pt, kBucketZoomLevel);
-      m_tileBuckets[bucketKey].push_back(pt);
+      TileKey const bucketKey = GetTileKeyByPoint(pixel.GetPoint(), kBucketZoomLevel);
+      m_tileBuckets[bucketKey].push_back(pixel);
     }
     wasChanged = true;
   }
+  else
+  {
+    LOG(LINFO, ("No additions"));
+  }
 
-  if (wasChanged)
-    m_needUpdate = true;
+  m_needUpdate = wasChanged;
 }
-
-void StreetPixelRenderer::Update() { m_needUpdate = true; }
 
 void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<gpu::ProgramManager> mng,
                                  ScreenBase const & screen, int zoomLevel, FrameValues const & frameValues)
@@ -109,6 +108,8 @@ void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<g
 
   if (m_needUpdate)
   {
+    LOG(LINFO, ("Reconstruct render data"));
+
     // Check if there are render data.
     if (m_renderData.empty() && !m_waitForRenderData)
     {
@@ -121,7 +122,6 @@ void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<g
 
     m_pivot = screen.GlobalRect().Center();
 
-    // Update points' positions and colors.
     ASSERT(!m_renderData.empty(), ());
     m_handlesCache.clear();
     for (size_t i = 0; i < m_renderData.size(); i++)
@@ -133,55 +133,52 @@ void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<g
       m_handlesCache.push_back(std::make_pair(handle, 0));
     }
 
-    double const currentScaleGtoP = 1.0 / screen.GetScale();
-    double const radiusMercator = m_radius / currentScaleGtoP;
+    // double const currentScaleGtoP = 1.0 / screen.GetScale();
+    // double const radiusMercator = m_radius / currentScaleGtoP;
 
     size_t cacheIndex = 0;
 
     // Determine tiles that intersect the screen clip rect in bucket zoom level.
     CalcTilesCoverage(screen.ClipRect(), kBucketZoomLevel,
-                      [this, &screen, radiusMercator, &cacheIndex](int tileX, int tileY)
+                      [this, &screen, &cacheIndex](int tileX, int tileY)
                       {
+                        if (m_waitForRenderData)
+                          return;
+
                         TileKey const key(tileX, tileY, kBucketZoomLevel);
                         auto itBucket = m_tileBuckets.find(key);
                         if (itBucket == m_tileBuckets.end())
                           return;
 
-                        // If we have already requested additional render data during this update pass, skip
-                        // processing of the remaining tiles. The new data will arrive on the next frame.
-                        if (m_waitForRenderData)
-                          return;
-
-                        for (StreetPixelPoint const & pt : itBucket->second)
+                        m2::RectD const clipRect = screen.ClipRect();
+                        for (StreetPixel const & pixel : itBucket->second)
                         {
-                          m2::RectD pointRect(pt.x - radiusMercator, pt.y - radiusMercator, pt.x + radiusMercator,
-                                              pt.y + radiusMercator);
-                          if (!screen.ClipRect().IsIntersect(pointRect))
+                          m2::PointD const & pixelPoint = pixel.GetPoint();
+                          if (!clipRect.IsPointInside(pixelPoint))
                             continue;
 
-                          m2::PointD const convertedPt = MapShape::ConvertToLocal(pt, m_pivot, kShapeCoordScalar);
+                          m2::PointD const convertedPoint =
+                            MapShape::ConvertToLocal(pixelPoint, m_pivot, kShapeCoordScalar);
 
-                          m_handlesCache[cacheIndex].first->SetPoint(m_handlesCache[cacheIndex].second, convertedPt,
-                                                                     m_radius, pt.GetColor());
-
-                          m_handlesCache[cacheIndex].second++;
-                          if (m_handlesCache[cacheIndex].second >= m_handlesCache[cacheIndex].first->GetPointsCount())
-                          {
+                          auto & cacheHandle = m_handlesCache[cacheIndex];
+                          cacheHandle.first->SetPoint(cacheHandle.second, convertedPoint, m_radius, pixel.GetColor());
+                          cacheHandle.second++;
+                          if (cacheHandle.second >= cacheHandle.first->GetPointsCount())
                             cacheIndex++;
-                            if (cacheIndex >= m_handlesCache.size())
-                            {
-                              m_dataRequestFn(kAveragePointsCount);
-                              m_waitForRenderData = true;
-                              return;
-                            }
+
+                          if (cacheIndex >= m_handlesCache.size())
+                          {
+                            m_dataRequestFn(kAveragePointsCount);
+                            m_waitForRenderData = true;
+                            return;
                           }
                         }
                       });
-    m_needUpdate = false;
 
-    // We have asked the backend for an additional buffer pack, wait until it arrives.
     if (m_waitForRenderData)
       return;
+
+    m_needUpdate = false;
   }
 
   if (m_handlesCache.empty() || m_handlesCache.front().second == 0)
@@ -208,6 +205,8 @@ void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<g
       m_renderData[i]->m_bucket->Render(context, state.GetDrawAsLine());
   }
 }
+
+void StreetPixelRenderer::Update() { m_needUpdate = true; }
 
 void StreetPixelRenderer::Clear()
 {
