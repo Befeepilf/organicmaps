@@ -61,6 +61,8 @@ public:
 
   void SetBookmarkManager(BookmarkManager * bmManager);
 
+  void OnBookmarksCreated();
+
   void LoadStreetPixels(std::map<storage::CountryId, storage::LocalFilePtr> const & countryFiles);
 
   void LoadStreetPixelsForRegion(storage::CountryId const & countryId, storage::LocalFilePtr const & localFile);

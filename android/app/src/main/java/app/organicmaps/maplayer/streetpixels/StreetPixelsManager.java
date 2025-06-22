@@ -2,7 +2,6 @@ package app.organicmaps.maplayer.streetpixels;
 
 import android.app.Application;
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -103,7 +102,6 @@ public class StreetPixelsManager
   static void updateStatus(@NonNull StreetPixelsState.Status status)
   {
     sStatus = status;
-    Log.i("StreetPixelsManager", "updateStatus: " + status.name());
 
     boolean enabled = isEnabled();
     java.util.List<Callback> snapshot;

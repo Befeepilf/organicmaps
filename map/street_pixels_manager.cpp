@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <sstream>
 #include <string>
+#include "coding/mmap_reader.hpp"
 
 namespace hp
 {
@@ -76,31 +77,12 @@ bool StreetPixelsManager::IsEnabled() const { return m_state.enabled; }
 
 void StreetPixelsManager::SetDrapeEngine(ref_ptr<df::DrapeEngine> engine) { m_drapeEngine.Set(engine); }
 
-void StreetPixelsManager::SetBookmarkManager(BookmarkManager * bmManager)
+void StreetPixelsManager::SetBookmarkManager(BookmarkManager * bmManager) { m_bmManager = bmManager; }
+
+void StreetPixelsManager::OnBookmarksCreated()
 {
-  m_bmManager = bmManager;
-
-  if (m_bmManager == nullptr)
-  {
-    LOG(LINFO, ("Bookmark manager is nullptr"));
-    return;
-  }
-
-  BookmarkManager::CategoriesChangedCallback previousCb = nullptr;
-  m_bmManager->SetCategoriesChangedCallback(
-    [this, previousCb]()
-    {
-      if (previousCb)
-        previousCb();
-      this->UpdateExploredPixels();
-    });
-
-  // If loading is already finished, perform initial calculation right away.
-  if (!m_bmManager->IsAsyncLoadingInProgress())
-  {
-    m_tracksLoaded = true;
-    UpdateExploredPixels();
-  }
+  m_tracksLoaded = true;
+  UpdateExploredPixels();
 }
 
 void StreetPixelsManager::LoadStreetPixels(std::map<storage::CountryId, storage::LocalFilePtr> const & countryFiles)
@@ -141,21 +123,40 @@ void StreetPixelsManager::LoadStreetPixelsForRegion(storage::CountryId const & c
 
   std::vector<df::StreetPixel> streetPixels;
   std::string filePath = GetPlatform().WritablePathForFile(countryId + ".pix");
+  bool loaded = false;
   try
   {
-    LOG(LINFO, ("Trying to load existing pix file for", countryId));
-    base::FileData file(filePath, base::FileData::Op::READ);
-    size_t const fileSizeBytes = file.Size();
-    streetPixels.resize(fileSizeBytes / sizeof(df::StreetPixel));
-    file.Read(0, streetPixels.data(), fileSizeBytes);
-    LOG(LINFO, ("Loaded", streetPixels.size(), "pixels for", countryId));
+    LOG(LINFO, ("Trying to memory-map existing pix file for", countryId));
+    MmapReader reader(filePath, MmapReader::Advice::Sequential);
+    size_t const count = reader.Size() / sizeof(df::StreetPixel);
+    auto const * data = reinterpret_cast<df::StreetPixel const *>(reader.Data());
+    streetPixels.assign(data, data + count);
+    LOG(LINFO, ("Mapped", streetPixels.size(), "pixels for", countryId));
+    loaded = true;
   }
   catch (std::exception const & e)
   {
-    LOG(LWARNING, ("Error reading pix file:", e.what()));
+    LOG(LWARNING, ("Error memory-mapping pix file:", e.what()));
   }
 
   bool shouldSave = false;
+  if (!loaded)
+  {
+    try
+    {
+      LOG(LINFO, ("Trying to load existing pix file for", countryId));
+      base::FileData file(filePath, base::FileData::Op::READ);
+      size_t const fileSizeBytes = file.Size();
+      streetPixels.resize(fileSizeBytes / sizeof(df::StreetPixel));
+      file.Read(0, streetPixels.data(), fileSizeBytes);
+      LOG(LINFO, ("Loaded", streetPixels.size(), "pixels for", countryId));
+    }
+    catch (std::exception const & e)
+    {
+      LOG(LWARNING, ("Error reading pix file:", e.what()));
+    }
+  }
+
   if (streetPixels.empty())
   {
     LOG(LINFO, ("Calculating street pixels for region:", countryId));

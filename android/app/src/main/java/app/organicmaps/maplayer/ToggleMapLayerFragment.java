@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -92,11 +91,8 @@ public class ToggleMapLayerFragment extends Fragment implements StreetPixelsMana
   @Override
   public void onStateChanged(boolean enabled, @NonNull StreetPixelsState.Status status)
   {
-    Log.i("ToggleMapLayerFragment", "onStateChanged: " + status.name());
     if (mAdapter != null)
       mAdapter.notifyDataSetChanged();
-    else
-      Log.w("ToggleMapLayerFragment", "mAdapter is null");
   }
 
   @Override
