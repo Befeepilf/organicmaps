@@ -31,10 +31,25 @@ namespace hp
 T_Healpix_Base<std::int64_t> const & GetHealpixBase();
 }  // namespace hp
 
-class StreetPixelManager
+class StreetPixelsManager
 {
 public:
-  StreetPixelManager();
+  enum class StreetPixelsState
+  {
+    Disabled,
+    Enabled,
+    NoData
+  };
+
+  using StreetPixelsStateChangedFn = std::function<void(StreetPixelsState)>;
+
+  StreetPixelsManager();
+
+  StreetPixelsState GetState() const;
+  void SetStateListener(StreetPixelsStateChangedFn const & onStateChangedFn);
+
+  void SetEnabled(bool enabled);
+  bool IsEnabled() const;
 
   void SetDrapeEngine(ref_ptr<df::DrapeEngine> engine);
 
@@ -57,6 +72,11 @@ public:
   void PrintExploredFractions() const;
 
 private:
+  StreetPixelsState m_state = StreetPixelsState::Disabled;
+  StreetPixelsStateChangedFn m_onStateChangedFn;
+
+  void ChangeState(StreetPixelsState newState);
+
   df::DrapeEngineSafePtr m_drapeEngine;
 
   BookmarkManager * m_bmManager = nullptr;

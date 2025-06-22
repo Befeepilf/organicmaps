@@ -15,7 +15,7 @@
 #include "map/routing_mark.hpp"
 #include "map/search_api.hpp"
 #include "map/search_mark.hpp"
-#include "map/street_pixel_manager.hpp"
+#include "map/street_pixels_manager.hpp"
 #include "map/track.hpp"
 #include "map/track_statistics.hpp"
 #include "map/traffic_manager.hpp"
@@ -195,7 +195,7 @@ protected:
   std::unique_ptr<BookmarkManager> m_bmManager;
 
   std::unique_ptr<EarthChunkManager> m_earthChunkManager;
-  std::unique_ptr<StreetPixelManager> m_streetPixelManager;
+  std::unique_ptr<StreetPixelsManager> m_streetPixelsManager;
 
   SearchMarks m_searchMarks;
 
@@ -290,6 +290,8 @@ public:
   void LoadEarthChunks();
 
   void LoadStreetPixels();
+  bool LoadStreetPixelsEnabled();
+  void SaveStreetPixelsEnabled(bool enabled);
 
   /// @return Created bookmark category id.
   kml::MarkGroupId AddCategory(std::string const & categoryName);
@@ -311,8 +313,8 @@ public:
   EarthChunkManager & GetEarthChunkManager();
   EarthChunkManager const & GetEarthChunkManager() const;
 
-  StreetPixelManager & GetStreetPixelManager();
-  StreetPixelManager const & GetStreetPixelManager() const;
+  StreetPixelsManager & GetStreetPixelsManager();
+  StreetPixelsManager const & GetStreetPixelsManager() const;
 
   /// @name Visualize utilities, used in desktop only. Implemented in framework_visualize.cpp
   /// @{

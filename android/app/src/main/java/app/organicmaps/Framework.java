@@ -290,6 +290,10 @@ public class Framework
 
   public static native boolean nativeIsOutdoorsLayerEnabled();
 
+  public static native void nativeSetStreetPixelsLayerEnabled(boolean enabled);
+
+  public static native boolean nativeIsStreetPixelsLayerEnabled();
+
   @NonNull
   public static native MapObject nativeDeleteBookmarkFromMapObject();
 

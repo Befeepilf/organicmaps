@@ -187,8 +187,8 @@ public:
   void UpdateGpsTrackPoints(std::vector<df::GpsTrackPoint> && toAdd, std::vector<uint32_t> && toRemove);
   void ClearGpsTrackPoints();
 
+  void EnableStreetPixels(bool enable);
   void UpdateStreetPixels(std::vector<df::StreetPixel> && toAdd, std::vector<df::StreetPixel> && toRemove);
-
   void ClearStreetPixels();
 
   void EnableChoosePositionMode(bool enable, std::vector<m2::TriangleD> && boundAreaTriangles,

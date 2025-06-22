@@ -784,6 +784,14 @@ void FrontendRenderer::AcceptMessage(ref_ptr<Message> message)
     break;
   }
 
+  case Message::Type::EnableStreetPixels:
+  {
+    ref_ptr<EnableStreetPixelsMessage> msg = message;
+    m_streetPixelRenderer->SetEnabled(msg->IsEnabled());
+    m_forceUpdateScene = true;
+    break;
+  }
+
   case Message::Type::UpdateStreetPixels:
   {
     ref_ptr<UpdateStreetPixelsMessage> msg = message;

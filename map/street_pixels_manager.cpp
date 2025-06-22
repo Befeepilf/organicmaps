@@ -1,4 +1,4 @@
-#include "map/street_pixel_manager.hpp"
+#include "map/street_pixels_manager.hpp"
 
 #include "drape_frontend/drape_engine.hpp"
 #include "drape_frontend/message.hpp"
@@ -45,11 +45,35 @@ T_Healpix_Base<std::int64_t> const & GetHealpixBase()
 }
 }  // namespace hp
 
-StreetPixelManager::StreetPixelManager() {}
+StreetPixelsManager::StreetPixelsManager() {}
 
-void StreetPixelManager::SetDrapeEngine(ref_ptr<df::DrapeEngine> engine) { m_drapeEngine.Set(engine); }
+StreetPixelsManager::StreetPixelsState StreetPixelsManager::GetState() const { return m_state; }
 
-void StreetPixelManager::SetBookmarkManager(BookmarkManager * bmManager)
+void StreetPixelsManager::SetStateListener(StreetPixelsStateChangedFn const & onStateChangedFn)
+{
+  m_onStateChangedFn = onStateChangedFn;
+}
+
+void StreetPixelsManager::ChangeState(StreetPixelsState newState)
+{
+  if (m_state == newState)
+    return;
+  m_state = newState;
+  if (m_onStateChangedFn != nullptr)
+    m_onStateChangedFn(newState);
+}
+
+void StreetPixelsManager::SetEnabled(bool enabled)
+{
+  ChangeState(enabled ? StreetPixelsState::Enabled : StreetPixelsState::Disabled);
+  m_drapeEngine.SafeCall(&df::DrapeEngine::EnableStreetPixels, enabled);
+}
+
+bool StreetPixelsManager::IsEnabled() const { return m_state != StreetPixelsState::Disabled; }
+
+void StreetPixelsManager::SetDrapeEngine(ref_ptr<df::DrapeEngine> engine) { m_drapeEngine.Set(engine); }
+
+void StreetPixelsManager::SetBookmarkManager(BookmarkManager * bmManager)
 {
   m_bmManager = bmManager;
 
@@ -83,7 +107,7 @@ void StreetPixelManager::SetBookmarkManager(BookmarkManager * bmManager)
   }
 }
 
-void StreetPixelManager::LoadStreetPixels(std::map<storage::CountryId, storage::LocalFilePtr> const & countryFiles)
+void StreetPixelsManager::LoadStreetPixels(std::map<storage::CountryId, storage::LocalFilePtr> const & countryFiles)
 {
   GetPlatform().RunTask(Platform::Thread::Background,
                         [this, countryFiles]()
@@ -103,8 +127,8 @@ void StreetPixelManager::LoadStreetPixels(std::map<storage::CountryId, storage::
                         });
 }
 
-void StreetPixelManager::LoadStreetPixelsForRegion(storage::CountryId const & countryId,
-                                                   storage::LocalFilePtr const & localFile)
+void StreetPixelsManager::LoadStreetPixelsForRegion(storage::CountryId const & countryId,
+                                                    storage::LocalFilePtr const & localFile)
 {
   if (countryId == "World" || countryId == "WorldCoasts")
   {
@@ -146,7 +170,7 @@ void StreetPixelManager::LoadStreetPixelsForRegion(storage::CountryId const & co
   LOG(LINFO, ("Done."));
 }
 
-void StreetPixelManager::SaveStreetPixelsToFile(storage::CountryId const & countryId)
+void StreetPixelsManager::SaveStreetPixelsToFile(storage::CountryId const & countryId)
 {
   LOG(LINFO, ("Saving street pixels for", countryId));
   try
@@ -170,7 +194,7 @@ void StreetPixelManager::SaveStreetPixelsToFile(storage::CountryId const & count
   }
 }
 
-void StreetPixelManager::SaveStreetPixelsToFile()
+void StreetPixelsManager::SaveStreetPixelsToFile()
 {
   for (auto const & [countryId, pixels] : m_countryStreetPixels)
   {
@@ -178,8 +202,8 @@ void StreetPixelManager::SaveStreetPixelsToFile()
   }
 }
 
-void StreetPixelManager::DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector,
-                                                        std::vector<df::StreetPixel> & streetPixels)
+void StreetPixelsManager::DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector,
+                                                         std::vector<df::StreetPixel> & streetPixels)
 {
   std::vector<m2::PointD> points;
   Classificator & c = classif();
@@ -237,8 +261,8 @@ void StreetPixelManager::DeriveStreetPixelsFromFeatures(FeaturesVectorTest & fea
 
         double const distanceMercator = p12.Length();
         double const distanceMeters = mercator::DistanceOnEarth(prevPoint, point);
-        // segmentize into 10 meter segments
-        size_t const numSegments = std::ceil(distanceMeters / 10.0);
+        // segmentize into 15 meter segments
+        size_t const numSegments = std::ceil(distanceMeters / 15.0);
         double const segmentSize = distanceMercator / numSegments;
         for (size_t segment = 1; segment < numSegments; segment++)
         {
@@ -268,7 +292,7 @@ void StreetPixelManager::DeriveStreetPixelsFromFeatures(FeaturesVectorTest & fea
   LOG(LINFO, ("Found", streetPixels.size(), "street pixels for", numStreets, "streets"));
 }
 
-void StreetPixelManager::AddPixels(storage::CountryId const & countryId, std::vector<df::StreetPixel> & streetPixels)
+void StreetPixelsManager::AddPixels(storage::CountryId const & countryId, std::vector<df::StreetPixel> & streetPixels)
 {
   {
     std::lock_guard<std::mutex> lock(m_pixelsMutex);
@@ -288,7 +312,7 @@ void StreetPixelManager::AddPixels(storage::CountryId const & countryId, std::ve
   LOG(LINFO, ("Loaded", m_allStreetPixels.size(), "total street pixels"));
 }
 
-void StreetPixelManager::UpdateExploredPixels()
+void StreetPixelsManager::UpdateExploredPixels()
 {
   if (m_bmManager == nullptr)
     return;
@@ -400,7 +424,7 @@ void StreetPixelManager::UpdateExploredPixels()
                         });
 }
 
-void StreetPixelManager::PrintExploredFractions() const
+void StreetPixelsManager::PrintExploredFractions() const
 {
   for (auto const & [countryId, pixels] : m_countryStreetPixels)
   {

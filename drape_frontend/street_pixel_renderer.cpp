@@ -37,7 +37,15 @@ StreetPixelRenderer::StreetPixelRenderer(TRenderDataRequestFn const & dataReques
   , m_needUpdate(false)
   , m_waitForRenderData(false)
   , m_radius(0.0f)
+  , m_enabled(false)
 {}
+
+void StreetPixelRenderer::SetEnabled(bool enabled)
+{
+  m_enabled = enabled;
+  if (!m_enabled)
+    ClearRenderData();
+}
 
 void StreetPixelRenderer::AddRenderData(ref_ptr<dp::GraphicsContext> context, ref_ptr<gpu::ProgramManager> mng,
                                         drape_ptr<CirclesPackRenderData> && renderData)
@@ -104,9 +112,12 @@ void StreetPixelRenderer::UpdatePixels(std::vector<StreetPixel> const & toAdd,
 void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<gpu::ProgramManager> mng,
                                  ScreenBase const & screen, int zoomLevel, FrameValues const & frameValues)
 {
+  if (!m_enabled)
+    return;
+
   if (zoomLevel < kMinVisibleZoomLevel)
   {
-    Clear();
+    ClearRenderData();
     return;
   }
 

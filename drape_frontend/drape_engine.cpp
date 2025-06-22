@@ -612,6 +612,12 @@ void DrapeEngine::ClearGpsTrackPoints()
                                   MessagePriority::Normal);
 }
 
+void DrapeEngine::EnableStreetPixels(bool enable)
+{
+  m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<EnableStreetPixelsMessage>(enable),
+                                  MessagePriority::Normal);
+}
+
 void DrapeEngine::UpdateStreetPixels(std::vector<df::StreetPixel> && toAdd, std::vector<df::StreetPixel> && toRemove)
 {
   m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread,

@@ -95,6 +95,7 @@ std::string_view constexpr kAllowAutoZoom = "AutoZoom";
 std::string_view constexpr kTrafficEnabledKey = "TrafficEnabled";
 std::string_view constexpr kTransitSchemeEnabledKey = "TransitSchemeEnabled";
 std::string_view constexpr kIsolinesEnabledKey = "IsolinesEnabled";
+std::string_view constexpr kStreetPixelsEnabledKey = "StreetPixelsEnabled";
 std::string_view constexpr kOutdoorsEnabledKey = "OutdoorsEnabled";
 std::string_view constexpr kTrafficSimplifiedColorsKey = "TrafficSimplifiedColors";
 std::string_view constexpr kLargeFontsSize = "LargeFontsSize";
@@ -255,6 +256,8 @@ void Framework::OnViewportChanged(ScreenBase const & screen)
 Framework::Framework(FrameworkParams const & params, bool loadMaps)
   : m_enabledDiffs(params.m_enableDiffs)
   , m_isRenderingEnabled(true)
+  , m_earthChunkManager(std::make_unique<EarthChunkManager>())
+  , m_streetPixelsManager(std::make_unique<StreetPixelsManager>())
   , m_transitManager(
       m_featuresFetcher.GetDataSource(), [this](FeatureCallback const & fn, vector<FeatureID> const & features)
       { return m_featuresFetcher.ReadFeatures(fn, features); },
@@ -269,8 +272,6 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
       static_cast<RoutingManager::Delegate &>(*this))
   , m_trafficManager(bind(&Framework::GetMwmsByRect, this, _1, false /* rough */), kMaxTrafficCacheSizeBytes,
                      m_routingManager.RoutingSession())
-  , m_earthChunkManager(std::make_unique<EarthChunkManager>())
-  , m_streetPixelManager(std::make_unique<StreetPixelManager>())
   , m_lastReportedCountry(kInvalidCountryId)
   , m_popularityLoader(m_featuresFetcher.GetDataSource(), POPULARITY_RANKS_FILE_TAG)
   , m_descriptionsLoader(std::make_unique<descriptions::Loader>(m_featuresFetcher.GetDataSource()))
@@ -337,7 +338,7 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
 
   m_routingManager.SetBookmarkManager(m_bmManager.get());
   m_searchMarks.SetBookmarkManager(m_bmManager.get());
-  m_streetPixelManager->SetBookmarkManager(m_bmManager.get());
+  m_streetPixelsManager->SetBookmarkManager(m_bmManager.get());
 
   m_routingManager.SetTransitManager(&m_transitManager);
 
@@ -420,7 +421,7 @@ void Framework::OnCountryFileDownloaded(storage::CountryId const & countryId, st
 
   InvalidateRect(rect);
   GetSearchAPI().ClearCaches();
-  GetStreetPixelManager().LoadStreetPixelsForRegion(countryId, localFile);
+  GetStreetPixelsManager().LoadStreetPixelsForRegion(countryId, localFile);
 }
 
 bool Framework::OnCountryFileDelete(storage::CountryId const & countryId, storage::LocalFilePtr const localFile)
@@ -550,8 +551,18 @@ void Framework::LoadEarthChunks() { GetEarthChunkManager().LoadEarthChunks(); }
 void Framework::LoadStreetPixels()
 {
   auto const & localMaps = GetStorage().GetRealLocalMaps();
-  GetStreetPixelManager().LoadStreetPixels(localMaps);
+  GetStreetPixelsManager().LoadStreetPixels(localMaps);
 }
+
+bool Framework::LoadStreetPixelsEnabled()
+{
+  bool enabled;
+  if (!settings::Get(kStreetPixelsEnabledKey, enabled))
+    enabled = false;
+  return enabled;
+}
+
+void Framework::SaveStreetPixelsEnabled(bool enabled) { settings::Set(kStreetPixelsEnabledKey, enabled); }
 
 kml::MarkGroupId Framework::AddCategory(string const & categoryName)
 {
@@ -1548,7 +1559,9 @@ void Framework::CreateDrapeEngine(ref_ptr<dp::GraphicsContextFactory> contextFac
     GpsTracker::Instance().Connect(bind(&Framework::OnUpdateGpsTrackPointsCallback, this, _1, _2, _3));
 
   GetBookmarkManager().SetDrapeEngine(make_ref(m_drapeEngine));
-  GetStreetPixelManager().SetDrapeEngine(make_ref(m_drapeEngine));
+  GetStreetPixelsManager().SetDrapeEngine(make_ref(m_drapeEngine));
+  GetStreetPixelsManager().SetEnabled(LoadStreetPixelsEnabled());
+
   m_drapeApi.SetDrapeEngine(make_ref(m_drapeEngine));
   GetEarthChunkManager().SetDrapeApi(make_ref(&m_drapeApi));
   m_routingManager.SetDrapeEngine(make_ref(m_drapeEngine), allow3d);
@@ -1618,7 +1631,7 @@ void Framework::DestroyDrapeEngine()
     m_isolinesManager.SetDrapeEngine(nullptr);
     m_searchMarks.SetDrapeEngine(nullptr);
     GetBookmarkManager().SetDrapeEngine(nullptr);
-    GetStreetPixelManager().SetDrapeEngine(nullptr);
+    GetStreetPixelsManager().SetDrapeEngine(nullptr);
 
     m_trafficManager.Teardown();
     GpsTracker::Instance().Disconnect();
@@ -1902,16 +1915,16 @@ EarthChunkManager const & Framework::GetEarthChunkManager() const
   return *m_earthChunkManager.get();
 }
 
-StreetPixelManager & Framework::GetStreetPixelManager()
+StreetPixelsManager & Framework::GetStreetPixelsManager()
 {
-  ASSERT(m_streetPixelManager != nullptr, ("Street pixel manager is not initialized."));
-  return *m_streetPixelManager.get();
+  ASSERT(m_streetPixelsManager != nullptr, ("Street pixel manager is not initialized."));
+  return *m_streetPixelsManager.get();
 }
 
-StreetPixelManager const & Framework::GetStreetPixelManager() const
+StreetPixelsManager const & Framework::GetStreetPixelsManager() const
 {
-  ASSERT(m_streetPixelManager != nullptr, ("Street pixel manager is not initialized."));
-  return *m_streetPixelManager.get();
+  ASSERT(m_streetPixelsManager != nullptr, ("Street pixel manager is not initialized."));
+  return *m_streetPixelsManager.get();
 }
 
 void Framework::SetPlacePageListeners(PlacePageEvent::OnOpen onOpen, PlacePageEvent::OnClose onClose,

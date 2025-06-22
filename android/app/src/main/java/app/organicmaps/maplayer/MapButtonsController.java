@@ -28,6 +28,7 @@ import app.organicmaps.downloader.MapManager;
 import app.organicmaps.downloader.UpdateInfo;
 import app.organicmaps.location.TrackRecorder;
 import app.organicmaps.maplayer.isolines.IsolinesManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.maplayer.subway.SubwayManager;
 import app.organicmaps.maplayer.traffic.TrafficManager;
 import app.organicmaps.routing.RoutingController;
@@ -296,7 +297,8 @@ public class MapButtonsController extends Fragment
     final boolean buttonSelected = TrafficManager.INSTANCE.isEnabled()
                                    || IsolinesManager.isEnabled()
                                    || SubwayManager.isEnabled()
-                                   || Framework.nativeIsOutdoorsLayerEnabled();
+                                   || Framework.nativeIsOutdoorsLayerEnabled()
+                                   || StreetPixelsManager.isEnabled();
     mToggleMapLayerButton.setHasActiveLayers(buttonSelected);
   }
 

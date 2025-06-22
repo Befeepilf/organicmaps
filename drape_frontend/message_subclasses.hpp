@@ -975,6 +975,21 @@ public:
   Type GetType() const override { return Type::ClearGpsTrackPoints; }
 };
 
+class EnableStreetPixelsMessage : public Message
+{
+public:
+  EnableStreetPixelsMessage(bool enabled)
+    : m_enabled(enabled)
+  {}
+
+  Type GetType() const override { return Type::EnableStreetPixels; }
+
+  bool IsEnabled() const { return m_enabled; }
+
+private:
+  bool m_enabled;
+};
+
 class UpdateStreetPixelsMessage : public Message
 {
 public:

@@ -8,7 +8,7 @@
 #include "geometry/mercator.hpp"
 #include "geometry/point2d.hpp"
 
-#include "map/street_pixel_manager.hpp"
+#include "map/street_pixels_manager.hpp"
 
 #include <healpix_base.h>
 #include <cmath>

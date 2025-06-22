@@ -37,6 +37,8 @@ struct TileKeyHasher
 class StreetPixelRenderer final
 {
 public:
+  void SetEnabled(bool enabled);
+
   using TRenderDataRequestFn = std::function<void(uint32_t)>;
   explicit StreetPixelRenderer(TRenderDataRequestFn const & dataRequestFn);
 
@@ -63,5 +65,6 @@ private:
   std::vector<std::pair<CirclesPackHandle *, size_t>> m_handlesCache;
   float m_radius;
   m2::PointD m_pivot;
+  bool m_enabled;
 };
 }  // namespace df

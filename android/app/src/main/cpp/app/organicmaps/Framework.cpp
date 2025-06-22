@@ -1594,6 +1594,19 @@ Java_app_organicmaps_Framework_nativeIsOutdoorsLayerEnabled(JNIEnv * env, jclass
   return static_cast<jboolean>(frm()->LoadOutdoorsEnabled());
 }
 
+JNIEXPORT void JNICALL Java_app_organicmaps_Framework_nativeSetStreetPixelsLayerEnabled(JNIEnv * env, jclass,
+                                                                                        jboolean enabled)
+{
+  auto const streetPixelsEnabled = static_cast<bool>(enabled);
+  frm()->GetStreetPixelsManager().SetEnabled(streetPixelsEnabled);
+  frm()->SaveStreetPixelsEnabled(enabled);
+}
+
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeIsStreetPixelsLayerEnabled(JNIEnv * env, jclass)
+{
+  return static_cast<jboolean>(frm()->LoadStreetPixelsEnabled());
+}
+
 JNIEXPORT void JNICALL
 Java_app_organicmaps_Framework_nativeSaveSettingSchemeEnabled(JNIEnv * env, jclass, jboolean enabled)
 {

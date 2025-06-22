@@ -64,6 +64,11 @@ public class LayerBottomSheetItem
         enabledResource = R.attr.trafficMenuEnabled;
         buttonTextResource = R.string.button_layer_traffic;
         break;
+      case STREET_PIXELS:
+        disabledResource = R.attr.trafficMenuDisabled;
+        enabledResource = R.attr.trafficMenuEnabled;
+        buttonTextResource = R.string.button_layer_street_pixels;
+        break;
     }
     int disabled = ThemeUtils.getResource(mContext, disabledResource);
     int enabled = ThemeUtils.getResource(mContext, enabledResource);

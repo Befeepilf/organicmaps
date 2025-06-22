@@ -62,6 +62,7 @@ public:
     CacheCirclesPack,
     UpdateGpsTrackPoints,
     ClearGpsTrackPoints,
+    EnableStreetPixels,
     UpdateStreetPixels,
     ClearStreetPixels,
     ShowChoosePositionMark,

@@ -57,8 +57,8 @@ set(SRC
   search_mark.cpp
   search_mark.hpp
   search_product_info.hpp
-  street_pixel_manager.cpp
-  street_pixel_manager.hpp
+  street_pixels_manager.cpp
+  street_pixels_manager.hpp
   track.cpp
   track.hpp
   track_statistics.cpp

@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import app.organicmaps.Framework;
 import app.organicmaps.maplayer.isolines.IsolinesManager;
 import app.organicmaps.maplayer.subway.SubwayManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.maplayer.traffic.TrafficManager;
 import app.organicmaps.util.ThemeSwitcher;
 
@@ -68,6 +69,20 @@ public enum Mode
         {
           Framework.nativeSetOutdoorsLayerEnabled(isEnabled);
           ThemeSwitcher.INSTANCE.restart(true);
+        }
+      },
+  STREET_PIXELS
+      {
+        @Override
+        public boolean isEnabled(@NonNull Context context)
+        {
+          return StreetPixelsManager.isEnabled();
+        }
+
+        @Override
+        public void setEnabled(@NonNull Context context, boolean isEnabled)
+        {
+          StreetPixelsManager.setEnabled(isEnabled);
         }
       };
   
