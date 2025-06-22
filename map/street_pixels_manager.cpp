@@ -56,20 +56,23 @@ void StreetPixelsManager::SetStateListener(StreetPixelsStateChangedFn const & on
 
 void StreetPixelsManager::ChangeState(StreetPixelsState newState)
 {
-  if (m_state == newState)
+  if (m_state.enabled == newState.enabled && m_state.status == newState.status)
     return;
+
+  LOG(LINFO, ("Setting status. Is loading:", newState.status == StreetPixelsStatus::Loading));
+
   m_state = newState;
   if (m_onStateChangedFn != nullptr)
-    m_onStateChangedFn(newState);
+    m_onStateChangedFn(m_state.enabled, m_state.status);
 }
 
 void StreetPixelsManager::SetEnabled(bool enabled)
 {
-  ChangeState(enabled ? StreetPixelsState::Enabled : StreetPixelsState::Disabled);
+  ChangeState(StreetPixelsState{enabled, m_state.status});
   m_drapeEngine.SafeCall(&df::DrapeEngine::EnableStreetPixels, enabled);
 }
 
-bool StreetPixelsManager::IsEnabled() const { return m_state != StreetPixelsState::Disabled; }
+bool StreetPixelsManager::IsEnabled() const { return m_state.enabled; }
 
 void StreetPixelsManager::SetDrapeEngine(ref_ptr<df::DrapeEngine> engine) { m_drapeEngine.Set(engine); }
 
@@ -83,14 +86,7 @@ void StreetPixelsManager::SetBookmarkManager(BookmarkManager * bmManager)
     return;
   }
 
-  // Register a categories-changed callback to update explored pixels once tracks/bookmarks are loaded.
-  // This will overwrite any existing callback; if one existed, it is invoked inside our handler to preserve
-  // behaviour.
-  BookmarkManager::CategoriesChangedCallback previousCb;
-
-  // Capture previous callback by creating a wrapper.
-  previousCb = nullptr;  // No access to the previous callback; assume none.
-
+  BookmarkManager::CategoriesChangedCallback previousCb = nullptr;
   m_bmManager->SetCategoriesChangedCallback(
     [this, previousCb]()
     {
@@ -109,6 +105,7 @@ void StreetPixelsManager::SetBookmarkManager(BookmarkManager * bmManager)
 
 void StreetPixelsManager::LoadStreetPixels(std::map<storage::CountryId, storage::LocalFilePtr> const & countryFiles)
 {
+  ChangeState(StreetPixelsState{m_state.enabled, StreetPixelsStatus::Loading});
   GetPlatform().RunTask(Platform::Thread::Background,
                         [this, countryFiles]()
                         {
@@ -123,7 +120,13 @@ void StreetPixelsManager::LoadStreetPixels(std::map<storage::CountryId, storage:
                             m_streetPixelsLoaded = true;
                           }
 
-                          GetPlatform().RunTask(Platform::Thread::Gui, [this]() { UpdateExploredPixels(); });
+                          GetPlatform().RunTask(
+                            Platform::Thread::Gui,
+                            [this]()
+                            {
+                              UpdateExploredPixels();
+                              ChangeState(StreetPixelsState{m_state.enabled, StreetPixelsStatus::Ready});
+                            });
                         });
 }
 

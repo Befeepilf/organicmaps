@@ -84,10 +84,21 @@ public enum Mode
         {
           StreetPixelsManager.setEnabled(isEnabled);
         }
+
+        @Override
+        public boolean isLoading(@NonNull Context context)
+        {
+          return StreetPixelsManager.isLoading();
+        }
       };
   
   public abstract boolean isEnabled(@NonNull Context context);
 
   public abstract void setEnabled(@NonNull Context context, boolean isEnabled);
+
+  public boolean isLoading(@NonNull Context context)
+  {
+    return false;
+  }
 
 }

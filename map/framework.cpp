@@ -255,9 +255,9 @@ void Framework::OnViewportChanged(ScreenBase const & screen)
 
 Framework::Framework(FrameworkParams const & params, bool loadMaps)
   : m_enabledDiffs(params.m_enableDiffs)
-  , m_isRenderingEnabled(true)
   , m_earthChunkManager(std::make_unique<EarthChunkManager>())
   , m_streetPixelsManager(std::make_unique<StreetPixelsManager>())
+  , m_isRenderingEnabled(true)
   , m_transitManager(
       m_featuresFetcher.GetDataSource(), [this](FeatureCallback const & fn, vector<FeatureID> const & features)
       { return m_featuresFetcher.ReadFeatures(fn, features); },

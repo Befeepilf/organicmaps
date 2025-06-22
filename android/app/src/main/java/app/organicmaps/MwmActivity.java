@@ -76,6 +76,8 @@ import app.organicmaps.maplayer.MapButtonsViewModel;
 import app.organicmaps.maplayer.ToggleMapLayerFragment;
 import app.organicmaps.maplayer.isolines.IsolinesManager;
 import app.organicmaps.maplayer.isolines.IsolinesState;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsState;
 import app.organicmaps.routing.ManageRouteBottomSheet;
 import app.organicmaps.routing.NavigationController;
 import app.organicmaps.routing.NavigationService;
@@ -1171,6 +1173,7 @@ public class MwmActivity extends BaseMwmFragmentActivity
       RoutingController.get().detach();
     }
     IsolinesManager.from(getApplicationContext()).detach();
+    StreetPixelsManager.from(getApplicationContext()).detach();
     mSearchController.detach();
     Utils.keepScreenOn(false, getWindow());
 

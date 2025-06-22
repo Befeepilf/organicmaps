@@ -10,6 +10,7 @@ import androidx.lifecycle.ProcessLifecycleOwner;
 import app.organicmaps.R;
 import app.organicmaps.bookmarks.data.BookmarkManager;
 import app.organicmaps.maplayer.isolines.IsolinesManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.maplayer.subway.SubwayManager;
 import app.organicmaps.maplayer.traffic.TrafficManager;
 import app.organicmaps.routing.RoutingController;
@@ -22,6 +23,7 @@ import app.organicmaps.util.StorageUtils;
 import app.organicmaps.util.ThemeSwitcher;
 import app.organicmaps.util.UiUtils;
 import app.organicmaps.util.log.Logger;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
 
 import java.io.IOException;
 
@@ -130,6 +132,7 @@ public final class OrganicMaps implements DefaultLifecycleObserver
     TrafficManager.INSTANCE.initialize();
     SubwayManager.from(mContext).initialize();
     IsolinesManager.from(mContext).initialize();
+    StreetPixelsManager.from(mContext).initialize();
     ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
 
     Logger.i(TAG, "Framework initialized");

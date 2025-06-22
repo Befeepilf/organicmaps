@@ -57,6 +57,7 @@ set(SRC
   app/organicmaps/settings/UnitLocale.cpp
   app/organicmaps/settings/MapLanguageCode.cpp
   app/organicmaps/sound/tts.cpp
+  app/organicmaps/streetpixels/StreetPixelsManager.cpp
   app/organicmaps/subway/SubwayManager.cpp
   app/organicmaps/TrackRecorder.cpp
   app/organicmaps/TrafficState.cpp

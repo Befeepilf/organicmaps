@@ -1,6 +1,7 @@
 package app.organicmaps.maplayer.streetpixels;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -19,9 +20,12 @@ class OnStreetPixelsChangedListener
   // Called from JNI.
   @Keep
   @SuppressWarnings("unused")
-  public void onStateChanged(int type)
+  public void onStateChanged(boolean enabled, int status)
   {
-    StreetPixelsState state = StreetPixelsState.values()[type];
+    Log.i("OnStreetPixelsChangedListener", "onStateChanged: " + status);
+    StreetPixelsState.Status newStatus = StreetPixelsState.Status.values()[status];
+    StreetPixelsManager.updateStatus(newStatus);
+    StreetPixelsState state = new StreetPixelsState(enabled, newStatus);
     if (mListener == null)
     {
       state.activate(mApp, null, null);

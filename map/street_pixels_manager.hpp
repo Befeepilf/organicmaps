@@ -34,14 +34,20 @@ T_Healpix_Base<std::int64_t> const & GetHealpixBase();
 class StreetPixelsManager
 {
 public:
-  enum class StreetPixelsState
+  enum class StreetPixelsStatus
   {
-    Disabled,
-    Enabled,
-    NoData
+    NotReady,
+    Loading,
+    Ready,
   };
 
-  using StreetPixelsStateChangedFn = std::function<void(StreetPixelsState)>;
+  struct StreetPixelsState
+  {
+    bool enabled = false;
+    StreetPixelsStatus status = StreetPixelsStatus::NotReady;
+  };
+
+  using StreetPixelsStateChangedFn = std::function<void(bool enabled, StreetPixelsStatus status)>;
 
   StreetPixelsManager();
 
@@ -72,7 +78,7 @@ public:
   void PrintExploredFractions() const;
 
 private:
-  StreetPixelsState m_state = StreetPixelsState::Disabled;
+  StreetPixelsState m_state;
   StreetPixelsStateChangedFn m_onStateChangedFn;
 
   void ChangeState(StreetPixelsState newState);
