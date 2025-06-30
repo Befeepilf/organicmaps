@@ -19,11 +19,11 @@ class OnStreetPixelsChangedListener
   // Called from JNI.
   @Keep
   @SuppressWarnings("unused")
-  public void onStateChanged(boolean enabled, int status)
+  public void onStateChanged(boolean enabled, int status, @NonNull String countryId)
   {
     StreetPixelsState.Status newStatus = StreetPixelsState.Status.values()[status];
-    StreetPixelsManager.updateStatus(newStatus);
-    StreetPixelsState state = new StreetPixelsState(enabled, newStatus);
+    StreetPixelsState state = new StreetPixelsState(enabled, newStatus, countryId);
+    StreetPixelsManager.updateState(state);
     if (mListener == null)
     {
       state.activate(mApp, null, null);

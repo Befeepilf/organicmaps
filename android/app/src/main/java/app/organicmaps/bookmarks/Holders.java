@@ -28,6 +28,7 @@ import app.organicmaps.widget.recycler.RecyclerClickListener;
 import app.organicmaps.widget.recycler.RecyclerLongClickListener;
 import app.organicmaps.util.Graphics;
 import app.organicmaps.util.UiUtils;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
 
 public class Holders
 {
@@ -343,6 +344,9 @@ public class Holders
     private final TextView mName;
     @NonNull
     private final TextView mDistance;
+    @NonNull
+    private final TextView mExplored;
+    private final ImageView mMoreButton;
 
     BookmarkViewHolder(@NonNull View itemView)
     {
@@ -350,6 +354,8 @@ public class Holders
       mIcon = itemView.findViewById(R.id.iv__bookmark_color);
       mName = itemView.findViewById(R.id.tv__bookmark_name);
       mDistance = itemView.findViewById(R.id.tv__bookmark_distance);
+      mExplored = itemView.findViewById(R.id.tv__bookmark_explored);
+      mMoreButton = itemView.findViewById(R.id.more);
     }
 
     @Override
@@ -389,6 +395,8 @@ public class Holders
     private final TextView mName;
     @NonNull
     private final TextView mDistance;
+    @NonNull
+    private final TextView mExplored;
     private final ImageView mMoreButton;
 
     TrackViewHolder(@NonNull View itemView)
@@ -397,6 +405,7 @@ public class Holders
       mIcon = itemView.findViewById(R.id.iv__bookmark_color);
       mName = itemView.findViewById(R.id.tv__bookmark_name);
       mDistance = itemView.findViewById(R.id.tv__bookmark_distance);
+      mExplored = itemView.findViewById(R.id.tv__bookmark_explored);
       mMoreButton = itemView.findViewById(R.id.more);
     }
 
@@ -415,6 +424,10 @@ public class Holders
       Drawable circle = Graphics.drawCircle(track.getColor(), R.dimen.track_circle_size,
                                             mIcon.getContext().getResources());
       mIcon.setImageDrawable(circle);
+      
+      double fraction = StreetPixelsManager.from(mIcon.getContext()).getTrackExploredFraction(trackId);
+      int percent = (int) Math.round(fraction * 100);
+      mExplored.setText(percent + "%");
     }
 
     public void setMoreButtonClickListener(RecyclerClickListener listener)

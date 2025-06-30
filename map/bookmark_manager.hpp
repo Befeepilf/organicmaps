@@ -432,6 +432,7 @@ public:
   dp::Color GenerateTrackRecordingColor() const;
 
   void ForEachTrack(std::function<void(Track const &)> const & fn) const;
+  void ForEachTrackSortedByTimestamp(std::function<void(Track const &)> const & fn) const;
 
 private:
   class MarksChangesTracker : public df::UserMarksProvider

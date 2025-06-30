@@ -23,6 +23,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -47,7 +48,8 @@ public:
     StreetPixelsStatus status = StreetPixelsStatus::NotReady;
   };
 
-  using StreetPixelsStateChangedFn = std::function<void(bool enabled, StreetPixelsStatus status)>;
+  using StreetPixelsStateChangedFn =
+    std::function<void(bool enabled, StreetPixelsStatus status, std::string countryId)>;
 
   StreetPixelsManager();
 
@@ -62,28 +64,35 @@ public:
   void SetBookmarkManager(BookmarkManager * bmManager);
 
   void OnBookmarksCreated();
-
-  void LoadStreetPixels(std::map<storage::CountryId, storage::LocalFilePtr> const & countryFiles);
-
-  void LoadStreetPixelsForRegion(storage::CountryId const & countryId, storage::LocalFilePtr const & localFile);
+  void LoadStreetPixels(storage::LocalFilePtr const & localFile);
 
   void DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector, std::vector<df::StreetPixel> & streetPixels);
 
-  void AddPixels(storage::CountryId const & countryId, std::vector<df::StreetPixel> & streetPixels);
+  void AddPixels(std::vector<df::StreetPixel> & streetPixels);
+
+  void ClearPixels();
 
   void SaveStreetPixelsToFile();
-
-  void SaveStreetPixelsToFile(storage::CountryId const & countryId);
 
   void UpdateExploredPixels();
 
   void PrintExploredFractions() const;
 
+  double GetExploredFraction(kml::TrackId trackId) const;
+
+  double GetTotalExploredFraction() const;
+
+  void OnUpdateCurrentCountry(storage::CountryId const & countryId, storage::LocalFilePtr const & localFile);
+
 private:
   StreetPixelsState m_state;
   StreetPixelsStateChangedFn m_onStateChangedFn;
+  mutable std::mutex m_stateMutex;
 
   void ChangeState(StreetPixelsState newState);
+
+  storage::CountryId m_countryId;
+  mutable std::mutex m_countryIdMutex;
 
   df::DrapeEngineSafePtr m_drapeEngine;
 
@@ -91,10 +100,15 @@ private:
 
   mutable std::mutex m_pixelsMutex;
 
-  std::unordered_map<storage::CountryId, std::vector<std::int64_t>> m_countryStreetPixels;
   std::unordered_map<std::int64_t, df::StreetPixel> m_allStreetPixels;
 
-  mutable std::mutex m_streetPixelsLoadedMutex;
-  bool m_streetPixelsLoaded = false;
   bool m_tracksLoaded = false;
+
+  mutable std::mutex m_fractionMutex;
+  std::unordered_map<kml::TrackId, double> m_trackExploredFraction;
+
+  void LoadExploredFractions();
+  void SaveExploredFractions() const;
+
+  std::unordered_set<int64_t> ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const;
 };

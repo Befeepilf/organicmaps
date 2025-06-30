@@ -14,6 +14,7 @@ public class Track
   private final String mName;
   private final Distance mLength;
   private final int mColor;
+  private final double mExploredFraction;
 
   Track(long trackId, long categoryId, String name, Distance length, int color)
   {
@@ -22,6 +23,17 @@ public class Track
     mName = name;
     mLength = length;
     mColor = color;
+    mExploredFraction = 0.0;
+  }
+
+  public Track(long trackId, long categoryId, String name, Distance length, int color, double exploredFraction)
+  {
+    mTrackId = trackId;
+    mCategoryId = categoryId;
+    mName = name;
+    mLength = length;
+    mColor = color;
+    mExploredFraction = exploredFraction;
   }
 
   public String getName() { return mName; }
@@ -33,6 +45,8 @@ public class Track
   public long getTrackId() { return mTrackId; }
 
   public long getCategoryId() { return mCategoryId; }
+
+  public double getExploredFraction() { return mExploredFraction; }
 
   public String getTrackDescription()
   {

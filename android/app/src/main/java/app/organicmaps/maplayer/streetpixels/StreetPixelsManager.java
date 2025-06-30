@@ -17,7 +17,7 @@ public class StreetPixelsManager
 
   public interface Callback
   {
-    void onStateChanged(boolean enabled, @NonNull StreetPixelsState.Status status);
+    void onStateChanged(boolean enabled, @NonNull StreetPixelsState.Status status, @NonNull String countryId);
   }
 
   @NonNull
@@ -78,6 +78,8 @@ public class StreetPixelsManager
   private static native void nativeAddListener(@NonNull OnStreetPixelsChangedListener listener);
   private static native void nativeRemoveListener(@NonNull OnStreetPixelsChangedListener listener);
   private static native boolean nativeShouldShowNotification();
+  private static native double nativeGetTrackExploredFraction(long trackId);
+  private static native double nativeGetTotalExploredFraction();
 
   public void attach(@NonNull StreetPixelsErrorDialogListener listener)
   {
@@ -94,16 +96,24 @@ public class StreetPixelsManager
     return nativeShouldShowNotification();
   }
 
+  public double getTrackExploredFraction(long trackId)
+  {
+    return nativeGetTrackExploredFraction(trackId);
+  }
+
+  public double getTotalExploredFraction()
+  {
+    return nativeGetTotalExploredFraction();
+  }
+
   public static boolean isLoading()
   {
     return sStatus == StreetPixelsState.Status.LOADING;
   }
 
-  static void updateStatus(@NonNull StreetPixelsState.Status status)
+  static void updateState(@NonNull StreetPixelsState state)
   {
-    sStatus = status;
-
-    boolean enabled = isEnabled();
+    sStatus = state.getStatus();
     java.util.List<Callback> snapshot;
     synchronized (sCallbacks)
     {
@@ -111,7 +121,7 @@ public class StreetPixelsManager
     }
     for (Callback cb : snapshot)
     {
-      cb.onStateChanged(enabled, status);
+      cb.onStateChanged(state.isEnabled(), state.getStatus(), state.getCountryId());
     }
   }
 }

@@ -18,11 +18,14 @@ public class StreetPixelsState
   private final boolean mEnabled;
   @NonNull
   private final Status mStatus;
+  @NonNull
+  private final String mCountryId;
 
-  public StreetPixelsState(boolean enabled, @NonNull Status status)
+  public StreetPixelsState(boolean enabled, @NonNull Status status, @NonNull String countryId)
   {
     mEnabled = enabled;
     mStatus = status;
+    mCountryId = countryId;
   }
 
   public boolean isEnabled()
@@ -34,6 +37,12 @@ public class StreetPixelsState
   public Status getStatus()
   {
     return mStatus;
+  }
+
+  @NonNull
+  public String getCountryId()
+  {
+    return mCountryId;
   }
 
   public void activate(@NonNull Context context, @Nullable View viewAbove, @Nullable View view)

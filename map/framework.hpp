@@ -289,7 +289,6 @@ public:
 
   void LoadEarthChunks();
 
-  void LoadStreetPixels();
   bool LoadStreetPixelsEnabled();
   void SaveStreetPixelsEnabled(bool enabled);
 

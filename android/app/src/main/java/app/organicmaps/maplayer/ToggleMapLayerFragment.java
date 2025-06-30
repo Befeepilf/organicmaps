@@ -89,7 +89,7 @@ public class ToggleMapLayerFragment extends Fragment implements StreetPixelsMana
   }
 
   @Override
-  public void onStateChanged(boolean enabled, @NonNull StreetPixelsState.Status status)
+  public void onStateChanged(boolean enabled, @NonNull StreetPixelsState.Status status, @NonNull String countryId)
   {
     if (mAdapter != null)
       mAdapter.notifyDataSetChanged();

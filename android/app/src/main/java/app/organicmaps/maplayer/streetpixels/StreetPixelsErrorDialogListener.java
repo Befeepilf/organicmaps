@@ -4,5 +4,5 @@ import androidx.annotation.NonNull;
 
 public interface StreetPixelsErrorDialogListener
 {
-  void onStateChanged(@NonNull StreetPixelsState type);
+  void onStateChanged(@NonNull StreetPixelsState state);
 }

@@ -122,7 +122,7 @@ Framework::Framework(std::function<void()> && afterMapsLoaded)
   m_work.GetTrafficManager().SetStateListener(bind(&Framework::TrafficStateChanged, this, _1));
   m_work.GetTransitManager().SetStateListener(bind(&Framework::TransitSchemeStateChanged, this, _1));
   m_work.GetIsolinesManager().SetStateListener(bind(&Framework::IsolinesSchemeStateChanged, this, _1));
-  m_work.GetStreetPixelsManager().SetStateListener(bind(&Framework::StreetPixelsStateChanged, this, _1, _2));
+  m_work.GetStreetPixelsManager().SetStateListener(bind(&Framework::StreetPixelsStateChanged, this, _1, _2, _3));
   m_work.GetPowerManager().Subscribe(this);
 }
 
@@ -173,10 +173,11 @@ void Framework::IsolinesSchemeStateChanged(IsolinesManager::IsolinesState state)
     m_onIsolinesStateChangedFn(state);
 }
 
-void Framework::StreetPixelsStateChanged(bool enabled, StreetPixelsManager::StreetPixelsStatus status)
+void Framework::StreetPixelsStateChanged(bool enabled, StreetPixelsManager::StreetPixelsStatus status,
+                                         storage::CountryId const & countryId)
 {
   if (m_onStreetPixelsStateChangedFn)
-    m_onStreetPixelsStateChangedFn(enabled, status);
+    m_onStreetPixelsStateChangedFn(enabled, status, countryId);
 }
 
 bool Framework::DestroySurfaceOnDetach()

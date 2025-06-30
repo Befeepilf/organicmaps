@@ -510,6 +510,18 @@ void BookmarkManager::ForEachTrack(std::function<void(Track const &)> const & fn
     fn(*kv.second);
 }
 
+void BookmarkManager::ForEachTrackSortedByTimestamp(std::function<void(Track const &)> const & fn) const
+{
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+  std::vector<Track const *> tracks;
+  for (auto const & kv : m_tracks)
+    tracks.push_back(kv.second.get());
+  std::sort(tracks.begin(), tracks.end(),
+            [](Track const * a, Track const * b) { return a->GetData().m_timestamp < b->GetData().m_timestamp; });
+  for (auto const * track : tracks)
+    fn(*track);
+}
+
 void BookmarkManager::MoveTrack(kml::TrackId trackID, kml::MarkGroupId curGroupID, kml::MarkGroupId newGroupID)
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());

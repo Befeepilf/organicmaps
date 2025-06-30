@@ -60,4 +60,6 @@
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintEnd_toEndOf="parent" />
   </androidx.constraintlayout.widget.ConstraintLayout>
+<include layout="@layout/map_exploration_banner" android:id="@+id/exploration_percentage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginHorizontal="@dimen/margin_base" app:layout_constraintEnd_toStartOf="@+id/map_buttons_inner_right" app:layout_constraintStart_toEndOf="@+id/map_buttons_inner_left" app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

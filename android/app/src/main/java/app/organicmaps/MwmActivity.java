@@ -50,6 +50,7 @@ import app.organicmaps.display.DisplayChangedListener;
 import app.organicmaps.display.DisplayManager;
 import app.organicmaps.display.DisplayType;
 import app.organicmaps.downloader.DownloaderActivity;
+import app.organicmaps.downloader.CountryItem;
 import app.organicmaps.downloader.DownloaderFragment;
 import app.organicmaps.downloader.MapManager;
 import app.organicmaps.downloader.OnmapDownloader;
@@ -1074,6 +1075,11 @@ public class MwmActivity extends BaseMwmFragmentActivity
         .show();
   }
 
+  private void onStreetPixelsStateChanged(@NonNull StreetPixelsState type)
+  {
+    mMapButtonsViewModel.setStreetPixelsState(type);
+  }
+
   @Override
   protected void onNewIntent(Intent intent)
   {
@@ -1154,6 +1160,7 @@ public class MwmActivity extends BaseMwmFragmentActivity
     BookmarkManager.INSTANCE.addLoadingListener(this);
     RoutingController.get().attach(this);
     IsolinesManager.from(getApplicationContext()).attach(this::onIsolinesStateChanged);
+    StreetPixelsManager.from(getApplicationContext()).attach(this::onStreetPixelsStateChanged);
     LocationState.nativeSetListener(this);
     LocationHelper.from(this).addListener(this);
     mSearchController.attach(this);
@@ -1176,6 +1183,8 @@ public class MwmActivity extends BaseMwmFragmentActivity
     StreetPixelsManager.from(getApplicationContext()).detach();
     mSearchController.detach();
     Utils.keepScreenOn(false, getWindow());
+
+    MapManager.nativeUnsubscribeOnCountryChanged();
 
     final String backUrl = Framework.nativeGetParsedBackUrl();
     if (!TextUtils.isEmpty(backUrl))

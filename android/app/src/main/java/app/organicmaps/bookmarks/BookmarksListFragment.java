@@ -53,6 +53,8 @@ import app.organicmaps.widget.placepage.BookmarkColorDialogFragment;
 import app.organicmaps.widget.placepage.EditBookmarkFragment;
 import app.organicmaps.widget.recycler.DividerItemDecorationWithPadding;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,6 +117,13 @@ public class BookmarksListFragment extends BaseMwmRecyclerFragment<ConcatAdapter
   };
   @Nullable
   private Bundle mSavedInstanceState;
+
+  private final StreetPixelsManager.Callback mStreetPixelsCallback = (enabled, status, countryId) -> {
+    android.util.Log.d("BookmarksListFragment", "StreetPixelsState changed: enabled=" + enabled + ", status=" + status);
+    if (status == StreetPixelsState.Status.READY) {
+      getBookmarkListAdapter().notifyDataSetChanged();
+    }
+  };
 
   @CallSuper
   @Override
@@ -218,6 +227,8 @@ public class BookmarksListFragment extends BaseMwmRecyclerFragment<ConcatAdapter
     BookmarkManager.INSTANCE.addLoadingListener(this);
     BookmarkManager.INSTANCE.addSortingListener(this);
     BookmarkManager.INSTANCE.addSharingListener(this);
+    StreetPixelsManager.from(requireContext()).initialize();
+    StreetPixelsManager.registerCallback(mStreetPixelsCallback);
   }
 
   @Override
@@ -248,6 +259,7 @@ public class BookmarksListFragment extends BaseMwmRecyclerFragment<ConcatAdapter
     BookmarkManager.INSTANCE.removeLoadingListener(this);
     BookmarkManager.INSTANCE.removeSortingListener(this);
     BookmarkManager.INSTANCE.removeSharingListener(this);
+    StreetPixelsManager.unregisterCallback(mStreetPixelsCallback);
   }
 
   private void configureBookmarksListAdapter()

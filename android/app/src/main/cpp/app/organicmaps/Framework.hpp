@@ -74,7 +74,8 @@ namespace android
     void TrafficStateChanged(TrafficManager::TrafficState state);
     void TransitSchemeStateChanged(TransitReadManager::TransitSchemeState state);
     void IsolinesSchemeStateChanged(IsolinesManager::IsolinesState state);
-    void StreetPixelsStateChanged(bool enabled, StreetPixelsManager::StreetPixelsStatus status);
+    void StreetPixelsStateChanged(bool enabled, StreetPixelsManager::StreetPixelsStatus status,
+                                  storage::CountryId const & countryId);
 
     void MyPositionModeChanged(location::EMyPositionMode mode, bool routingActive);
 

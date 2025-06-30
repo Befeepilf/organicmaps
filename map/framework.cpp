@@ -427,7 +427,9 @@ void Framework::OnCountryFileDownloaded(storage::CountryId const & countryId, st
 
   InvalidateRect(rect);
   GetSearchAPI().ClearCaches();
-  GetStreetPixelsManager().LoadStreetPixelsForRegion(countryId, localFile);
+
+  if (m_lastReportedCountry == countryId)
+    GetStreetPixelsManager().OnUpdateCurrentCountry(countryId, localFile);
 }
 
 bool Framework::OnCountryFileDelete(storage::CountryId const & countryId, storage::LocalFilePtr const localFile)
@@ -553,12 +555,6 @@ void Framework::DeregisterAllMaps()
 void Framework::LoadBookmarks() { GetBookmarkManager().LoadBookmarks(); }
 
 void Framework::LoadEarthChunks() { GetEarthChunkManager().LoadEarthChunks(); }
-
-void Framework::LoadStreetPixels()
-{
-  auto const & localMaps = GetStorage().GetRealLocalMaps();
-  GetStreetPixelsManager().LoadStreetPixels(localMaps);
-}
 
 bool Framework::LoadStreetPixelsEnabled()
 {
@@ -1169,6 +1165,9 @@ void Framework::OnUpdateCurrentCountry(m2::PointD const & pt, int zoomLevel)
                           if (m_currentCountryChanged != nullptr)
                             m_currentCountryChanged(newCountryId);
                         });
+
+  auto localFile = GetStorage().GetLatestLocalFile(newCountryId);
+  GetStreetPixelsManager().OnUpdateCurrentCountry(newCountryId, localFile);
 }
 
 void Framework::SetCurrentCountryChangedListener(TCurrentCountryChanged listener)
@@ -1591,7 +1590,6 @@ void Framework::CreateDrapeEngine(ref_ptr<dp::GraphicsContextFactory> contextFac
   benchmark::RunGraphicsBenchmark(this);
 
   GetEarthChunkManager().LoadEarthChunks();
-  LoadStreetPixels();
 }
 
 void Framework::OnRecoverSurface(int width, int height, bool recreateContextDependentResources)
