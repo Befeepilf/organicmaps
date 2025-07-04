@@ -59,8 +59,8 @@ private:
   TRenderDataRequestFn m_dataRequestFn;
   std::vector<drape_ptr<CirclesPackRenderData>> m_renderData;
 
-  std::unordered_map<TileKey, std::vector<StreetPixel>, TileKeyHasher> m_tileBuckets;
-
+  std::unordered_map<TileKey, std::vector<std::uint32_t>, TileKeyHasher> m_tileBuckets;
+  std::span<StreetPixel> m_allPixels;
   bool m_needUpdate;
   bool m_waitForRenderData;
   std::vector<std::pair<CirclesPackHandle *, size_t>> m_handlesCache;

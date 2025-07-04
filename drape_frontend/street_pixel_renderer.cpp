@@ -68,15 +68,17 @@ void StreetPixelRenderer::ClearRenderData()
 
 void StreetPixelRenderer::UpdatePixels(std::span<StreetPixel> const & toAdd)
 {
+  m_allPixels = toAdd;
   bool wasChanged = false;
 
   if (!toAdd.empty())
   {
     LOG(LINFO, ("Adding", toAdd.size()));
-    for (auto const & pixel : toAdd)
+    for (std::uint32_t i = 0; i < toAdd.size(); i++)
     {
+      StreetPixel const & pixel = toAdd[i];
       TileKey const bucketKey = GetTileKeyByPoint(pixel.GetPoint(), kBucketZoomLevel);
-      m_tileBuckets[bucketKey].push_back(pixel);
+      m_tileBuckets[bucketKey].push_back(i);
     }
     wasChanged = true;
   }
@@ -146,8 +148,9 @@ void StreetPixelRenderer::Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<g
                           return;
 
                         m2::RectD const clipRect = screen.ClipRect();
-                        for (StreetPixel const & pixel : itBucket->second)
+                        for (std::uint32_t i : itBucket->second)
                         {
+                          StreetPixel const & pixel = m_allPixels[i];
                           m2::PointD const & pixelPoint = pixel.GetPoint();
                           if (!clipRect.IsPointInside(pixelPoint))
                             continue;
