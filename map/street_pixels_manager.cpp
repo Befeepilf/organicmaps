@@ -317,13 +317,10 @@ void StreetPixelsManager::UpdateExploredPixels()
 
         auto trackPixels = ComputeTrackPixels(geometry);
         std::set<int64_t> newPixels;
-        size_t notFound = 0;
         {
           for (auto pix : trackPixels)
           {
             auto * pixel = FindStreetPixel(pix);
-            if (pixel == nullptr)
-              notFound++;
             if (pixel == nullptr || pixel->IsExplored())
               continue;
             pixel->SetExplored(true);
@@ -347,9 +344,6 @@ void StreetPixelsManager::UpdateExploredPixels()
           return;
         }
       }
-
-      // TODO
-      // m_drapeEngine.SafeCall(&df::DrapeEngine::ClearStreetPixelsCache);
 
       {
         std::lock_guard<std::mutex> lock(m_fractionMutex);
