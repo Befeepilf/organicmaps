@@ -16,17 +16,6 @@
 
 namespace df
 {
-StreetPixel::StreetPixel()
-  : m_pixelId(0)
-{}
-
-StreetPixel::StreetPixel(int64_t pixelId)
-  : m_pixelId(pixelId)
-{
-  // first bit is used for explored flag so pixel id has 63 bits available
-  ASSERT_LESS_OR_EQUAL(pixelId, 0x7FFFFFFFFFFFFFFF, ());
-}
-
 std::int64_t StreetPixel::GetPixelId() const { return m_pixelId & 0x7FFFFFFFFFFFFFFF; }
 
 bool StreetPixel::IsExplored() const { return m_pixelId & 0x8000000000000000; }

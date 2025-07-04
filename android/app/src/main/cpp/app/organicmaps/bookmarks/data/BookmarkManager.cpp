@@ -319,7 +319,7 @@ Java_app_organicmaps_bookmarks_data_BookmarkManager_nativeLoadBookmarks(JNIEnv *
   callbacks.m_onFinished = std::bind(&OnAsyncLoadingFinished, env);
   callbacks.m_onFileSuccess = std::bind(&OnAsyncLoadingFileSuccess, env, _1, _2);
   callbacks.m_onFileError = std::bind(&OnAsyncLoadingFileError, env, _1, _2);
-  frm()->GetBookmarkManager().SetAsyncLoadingCallbacks(std::move(callbacks));
+  frm()->GetBookmarkManager().AddAsyncLoadingCallbacks(std::move(callbacks));
 
   frm()->GetBookmarkManager().SetBookmarksChangedCallback(std::bind(&OnBookmarksChanged, env));
 

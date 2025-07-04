@@ -10,6 +10,7 @@
 #include "geometry/point2d.hpp"
 #include "geometry/rect2d.hpp"
 
+#include "coding/mmap_reader.hpp"
 #include "indexer/features_vector.hpp"
 
 #include "storage/storage.hpp"
@@ -23,8 +24,8 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <span>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace hp
@@ -66,13 +67,11 @@ public:
   void OnBookmarksCreated();
   void LoadStreetPixels(storage::LocalFilePtr const & localFile);
 
-  void DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector, std::vector<df::StreetPixel> & streetPixels);
-
-  void AddPixels(std::vector<df::StreetPixel> & streetPixels);
+  std::set<std::int64_t> DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector);
+  void LoadStreetPixelsFromFile(storage::CountryId const & countryId);
+  void SaveStreetPixelsToFile(std::set<std::int64_t> const & streetPixels);
 
   void ClearPixels();
-
-  void SaveStreetPixelsToFile();
 
   void UpdateExploredPixels();
 
@@ -98,9 +97,11 @@ private:
 
   BookmarkManager * m_bmManager = nullptr;
 
-  mutable std::mutex m_pixelsMutex;
+  std::span<df::StreetPixel> m_streetPixels;
 
-  std::unordered_map<std::int64_t, df::StreetPixel> m_allStreetPixels;
+  std::unique_ptr<MmapReader> m_mmapReader;
+
+  df::StreetPixel * FindStreetPixel(std::int64_t pixelId);
 
   bool m_tracksLoaded = false;
 
@@ -110,5 +111,5 @@ private:
   void LoadExploredFractions();
   void SaveExploredFractions() const;
 
-  std::unordered_set<int64_t> ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const;
+  std::set<int64_t> ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const;
 };

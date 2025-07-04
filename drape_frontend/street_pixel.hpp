@@ -10,8 +10,7 @@ namespace df
 class StreetPixel
 {
 public:
-  StreetPixel();
-  StreetPixel(std::int64_t pixelId);
+  StreetPixel() = default;
 
   bool IsExplored() const;
   void SetExplored(bool explored);

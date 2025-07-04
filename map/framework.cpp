@@ -320,18 +320,19 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
     {
       LOG(LINFO, ("Bookmarks created", marks.size()));
       GetSearchAPI().OnBookmarksCreated(marks);
-      GetStreetPixelsManager().OnBookmarksCreated();
+      // GetStreetPixelsManager().OnBookmarks∏Created();
     },
     [this](vector<BookmarkInfo> const & marks)
     {
       LOG(LINFO, ("Bookmarks updated", marks.size()));
       GetSearchAPI().OnBookmarksUpdated(marks);
-      GetStreetPixelsManager().UpdateExploredPixels();
+      // GetStreetPixelsManager().UpdateExploredPixels();
     },
     [this](vector<kml::MarkId> const & marks)
     {
+      LOG(LINFO, ("Bookmarks deleted", marks.size()));
       GetSearchAPI().OnBookmarksDeleted(marks);
-      GetStreetPixelsManager().UpdateExploredPixels();
+      // GetStreetPixelsManager().UpdateExploredPixels();
     },
     [this](vector<BookmarkGroupInfo> const & marks)
     {
@@ -339,6 +340,17 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
       GetSearchAPI().OnBookmarksAttached(marks);
     },
     [this](vector<BookmarkGroupInfo> const & marks) { GetSearchAPI().OnBookmarksDetached(marks); }));
+
+  m_bmManager->AddAsyncLoadingCallbacks({[this]() { LOG(LINFO, ("Started loading bookmarks")); },
+                                         [this]()
+                                         {
+                                           LOG(LINFO, ("Finnished loading bookmarks"));
+                                           GetStreetPixelsManager().OnBookmarksCreated();
+                                         },
+                                         [this](std::string const & filePath, bool isTemporaryFile)
+                                         { LOG(LINFO, ("Finnished loading bookmarks file", filePath)); },
+                                         [this](std::string const & filePath, bool isTemporaryFile)
+                                         { LOG(LWARNING, ("Failed loading bookmarks file", filePath)); }});
 
   m_bmManager->InitRegionAddressGetter(m_featuresFetcher.GetDataSource(), *m_infoGetter);
 

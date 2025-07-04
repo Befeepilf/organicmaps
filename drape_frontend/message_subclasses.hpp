@@ -44,6 +44,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -993,19 +994,16 @@ private:
 class UpdateStreetPixelsMessage : public Message
 {
 public:
-  UpdateStreetPixelsMessage(std::vector<StreetPixel> && toAdd, std::vector<StreetPixel> && toRemove)
-    : m_toAdd(std::move(toAdd))
-    , m_toRemove(std::move(toRemove))
+  UpdateStreetPixelsMessage(std::span<StreetPixel> & toAdd)
+    : m_toAdd(toAdd)
   {}
 
   Type GetType() const override { return Type::UpdateStreetPixels; }
 
-  std::vector<StreetPixel> const & GetToAdd() const { return m_toAdd; }
-  std::vector<StreetPixel> const & GetToRemove() const { return m_toRemove; }
+  std::span<StreetPixel> & GetToAdd() { return m_toAdd; }
 
 private:
-  std::vector<StreetPixel> m_toAdd;
-  std::vector<StreetPixel> m_toRemove;
+  std::span<StreetPixel> & m_toAdd;
 };
 
 class ClearStreetPixelsMessage : public Message

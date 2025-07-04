@@ -10,6 +10,7 @@
 #include "drape/vertex_array_buffer.hpp"
 
 #include <algorithm>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -65,31 +66,9 @@ void StreetPixelRenderer::ClearRenderData()
   m_needUpdate = true;
 }
 
-void StreetPixelRenderer::UpdatePixels(std::vector<StreetPixel> const & toAdd,
-                                       std::vector<StreetPixel> const & toRemove)
+void StreetPixelRenderer::UpdatePixels(std::span<StreetPixel> const & toAdd)
 {
   bool wasChanged = false;
-
-  if (!toRemove.empty())
-  {
-    for (auto const & pixel : toRemove)
-    {
-      // Remove from bucket container as well.
-      TileKey const bucketKey = GetTileKeyByPoint(pixel.GetPoint(), kBucketZoomLevel);
-      auto itBucket = m_tileBuckets.find(bucketKey);
-      if (itBucket != m_tileBuckets.end())
-      {
-        auto & vec = itBucket->second;
-        auto const pixelId = pixel.GetPixelId();
-        vec.erase(std::remove_if(vec.begin(), vec.end(),
-                                 [pixelId](StreetPixel const & p) { return p.GetPixelId() == pixelId; }),
-                  vec.end());
-        if (vec.empty())
-          m_tileBuckets.erase(itBucket);
-      }
-    }
-    wasChanged = true;
-  }
 
   if (!toAdd.empty())
   {

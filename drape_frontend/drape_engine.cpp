@@ -10,6 +10,7 @@
 
 #include "platform/settings.hpp"
 
+#include <span>
 #include <unordered_map>
 
 namespace df
@@ -618,10 +619,9 @@ void DrapeEngine::EnableStreetPixels(bool enable)
                                   MessagePriority::Normal);
 }
 
-void DrapeEngine::UpdateStreetPixels(std::vector<df::StreetPixel> && toAdd, std::vector<df::StreetPixel> && toRemove)
+void DrapeEngine::UpdateStreetPixels(std::span<df::StreetPixel> & toAdd)
 {
-  m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread,
-                                  make_unique_dp<UpdateStreetPixelsMessage>(std::move(toAdd), std::move(toRemove)),
+  m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<UpdateStreetPixelsMessage>(toAdd),
                                   MessagePriority::Normal);
 }
 

@@ -795,7 +795,7 @@ void FrontendRenderer::AcceptMessage(ref_ptr<Message> message)
   case Message::Type::UpdateStreetPixels:
   {
     ref_ptr<UpdateStreetPixelsMessage> msg = message;
-    m_streetPixelRenderer->UpdatePixels(msg->GetToAdd(), msg->GetToRemove());
+    m_streetPixelRenderer->UpdatePixels(msg->GetToAdd());
     break;
   }
 

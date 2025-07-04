@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -48,7 +49,7 @@ public:
   void Render(ref_ptr<dp::GraphicsContext> context, ref_ptr<gpu::ProgramManager> mng, ScreenBase const & screen,
               int zoomLevel, FrameValues const & frameValues);
 
-  void UpdatePixels(std::vector<StreetPixel> const & toAdd, std::vector<StreetPixel> const & toRemove);
+  void UpdatePixels(std::span<StreetPixel> const & toAdd);
 
   void Update();
   void Clear();

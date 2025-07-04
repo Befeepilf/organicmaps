@@ -33,6 +33,7 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -188,7 +189,7 @@ public:
   void ClearGpsTrackPoints();
 
   void EnableStreetPixels(bool enable);
-  void UpdateStreetPixels(std::vector<df::StreetPixel> && toAdd, std::vector<df::StreetPixel> && toRemove);
+  void UpdateStreetPixels(std::span<df::StreetPixel> & toAdd);
   void ClearStreetPixels();
 
   void EnableChoosePositionMode(bool enable, std::vector<m2::TriangleD> && boundAreaTriangles,
