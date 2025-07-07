@@ -1,5 +1,10 @@
 #include "map/street_pixels_manager.hpp"
 
+#include "base/assert.hpp"
+#include "base/logging.hpp"
+#include "base/math.hpp"
+#include "base/src_point.hpp"
+
 #include "coding/mmap_reader.hpp"
 
 #include "drape_frontend/drape_engine.hpp"
@@ -20,16 +25,12 @@
 
 #include "map/track.hpp"
 
+#include "platform/location.hpp"
 #include "platform/platform.hpp"
 
 #include "routing/routing_helpers.hpp"
 #include "routing_common/bicycle_model.hpp"
 #include "routing_common/pedestrian_model.hpp"
-
-#include "base/assert.hpp"
-#include "base/logging.hpp"
-#include "base/math.hpp"
-#include "base/src_point.hpp"
 
 #include <healpix_base.h>
 #include <healpix_tables.h>
@@ -386,9 +387,7 @@ void StreetPixelsManager::UpdateExploredPixels()
 std::set<int64_t> StreetPixelsManager::ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const
 {
   std::set<int64_t> pixels;
-  double constexpr kExploreRadiusMeters = 25.0;
-  double constexpr kEarthRadiusMeters = 6371000.0;
-  double constexpr kRadiusRads = kExploreRadiusMeters / kEarthRadiusMeters;
+
   if (line.empty())
     return pixels;
 
@@ -406,21 +405,45 @@ std::set<int64_t> StreetPixelsManager::ComputeTrackPixels(kml::MultiGeometry::Li
     {
       m2::PointD p = prev + dir * (s * step);
       auto const latlon = mercator::ToLatLon(p);
-      double lat_rad = base::DegToRad(latlon.m_lat);
-      double lon_rad = base::DegToRad(latlon.m_lon);
-      pointing ang(M_PI_2 - lat_rad, lon_rad);
-      auto disc = hp::GetHealpixBase().query_disc(ang, kRadiusRads);
-      for (tsize r = 0; r < disc.nranges(); ++r)
-      {
-        int64_t first = disc.ivbegin(r);
-        int64_t last = disc.ivend(r);
-        for (int64_t pix = first; pix < last; ++pix)
-          pixels.insert(pix);
-      }
+      AddPixelsInRadius(latlon.m_lat, latlon.m_lon, pixels);
     }
     prev = curr;
   }
   return pixels;
+}
+
+void StreetPixelsManager::AddPixelsInRadius(double lat, double lon, std::set<std::int64_t> & pixels) const
+{
+  double constexpr kExploreRadiusMeters = 25.0;
+  double constexpr kEarthRadiusMeters = 6371000.0;
+  double constexpr kRadiusRads = kExploreRadiusMeters / kEarthRadiusMeters;
+
+  double const lat_rad = base::DegToRad(lat);
+  double const lon_rad = base::DegToRad(lon);
+  pointing ang(M_PI_2 - lat_rad, lon_rad);
+  auto disc = hp::GetHealpixBase().query_disc(ang, kRadiusRads);
+  for (tsize r = 0; r < disc.nranges(); ++r)
+  {
+    std::int64_t first = disc.ivbegin(r);
+    std::int64_t last = disc.ivend(r);
+    for (std::int64_t pix = first; pix < last; ++pix)
+      pixels.insert(pix);
+  }
+}
+
+void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
+{
+  auto const latlon = info.GetLatLon();
+  std::set<std::int64_t> pixels;
+  AddPixelsInRadius(latlon.m_lat, latlon.m_lon, pixels);
+  for (auto const & pix : pixels)
+  {
+    auto * pixel = FindStreetPixel(pix);
+    if (pixel == nullptr || pixel->IsExplored())
+      continue;
+    pixel->SetExplored(true);
+    msync(pixel, sizeof(df::StreetPixel), MS_ASYNC);
+  }
 }
 
 void StreetPixelsManager::OnUpdateCurrentCountry(storage::CountryId const & countryId,

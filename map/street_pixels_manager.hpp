@@ -2,6 +2,8 @@
 
 #include "map/bookmark_manager.hpp"
 
+#include "platform/location.hpp"
+
 #include "drape_frontend/drape_engine_safe_ptr.hpp"
 #include "drape_frontend/street_pixel.hpp"
 
@@ -11,6 +13,7 @@
 #include "geometry/rect2d.hpp"
 
 #include "coding/mmap_reader.hpp"
+
 #include "indexer/features_vector.hpp"
 
 #include "storage/storage.hpp"
@@ -75,13 +78,15 @@ public:
 
   void UpdateExploredPixels();
 
-  bool HasExploredFraction(kml::TrackId const & trackId) const
-  
+  bool HasExploredFraction(kml::TrackId const & trackId) const;
+
   double GetExploredFraction(kml::TrackId const & trackId) const;
 
   double GetTotalExploredFraction() const;
 
   void OnUpdateCurrentCountry(storage::CountryId const & countryId, storage::LocalFilePtr const & localFile);
+
+  void OnLocationUpdate(location::GpsInfo const & info);
 
 private:
   StreetPixelsState m_state;
@@ -112,4 +117,5 @@ private:
   void SaveExploredFractions() const;
 
   std::set<int64_t> ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const;
+  void AddPixelsInRadius(double lat, double lon, std::set<std::int64_t> & pixels) const;
 };

@@ -184,6 +184,7 @@ void Framework::OnLocationUpdate(GpsInfo const & info)
 #endif
 
   m_routingManager.OnLocationUpdate(rInfo);
+  m_streetPixelsManager->OnLocationUpdate(rInfo);
 }
 
 void Framework::OnCompassUpdate(CompassInfo const & info)
@@ -341,15 +342,15 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
     },
     [this](vector<BookmarkGroupInfo> const & marks) { GetSearchAPI().OnBookmarksDetached(marks); }));
 
-  m_bmManager->AddAsyncLoadingCallbacks({[this]() { LOG(LINFO, ("Started loading bookmarks")); },
+  m_bmManager->AddAsyncLoadingCallbacks({[]() { LOG(LINFO, ("Started loading bookmarks")); },
                                          [this]()
                                          {
                                            LOG(LINFO, ("Finnished loading bookmarks"));
                                            GetStreetPixelsManager().OnBookmarksCreated();
                                          },
-                                         [this](std::string const & filePath, bool isTemporaryFile)
+                                         [](std::string const & filePath, bool isTemporaryFile)
                                          { LOG(LINFO, ("Finnished loading bookmarks file", filePath)); },
-                                         [this](std::string const & filePath, bool isTemporaryFile)
+                                         [](std::string const & filePath, bool isTemporaryFile)
                                          { LOG(LWARNING, ("Failed loading bookmarks file", filePath)); }});
 
   m_bmManager->InitRegionAddressGetter(m_featuresFetcher.GetDataSource(), *m_infoGetter);
