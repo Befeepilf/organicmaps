@@ -326,6 +326,9 @@ void StreetPixelsManager::UpdateExploredPixels()
           }
         }
 
+        if (HasExploredFraction(trackId))
+          continue;
+
         LOG(LINFO, ("Computing track pixels for", trackId));
 
         auto trackPixels = ComputeTrackPixels(geometry);
@@ -449,7 +452,13 @@ void StreetPixelsManager::OnUpdateCurrentCountry(storage::CountryId const & coun
                         });
 }
 
-double StreetPixelsManager::GetExploredFraction(kml::TrackId trackId) const
+bool StreetPixelsManager::HasExploredFraction(kml::TrackId const & trackId) const
+{
+  std::lock_guard<std::mutex> lock(m_fractionMutex);
+  return m_trackExploredFraction.find(trackId) != m_trackExploredFraction.end();
+}
+
+double StreetPixelsManager::GetExploredFraction(kml::TrackId const & trackId) const
 {
   std::lock_guard<std::mutex> lock(m_fractionMutex);
   auto it = m_trackExploredFraction.find(trackId);
