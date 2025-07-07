@@ -380,24 +380,6 @@ void StreetPixelsManager::UpdateExploredPixels()
     });
 }
 
-void StreetPixelsManager::PrintExploredFractions() const
-{
-  storage::CountryId countryId;
-  {
-    std::lock_guard<std::mutex> lock(m_countryIdMutex);
-    countryId = m_countryId;
-  }
-
-  size_t const numExplorablePixels = m_streetPixels.size();
-  size_t numExploredPixels = 0;
-  for (auto const & pixel : m_streetPixels)
-    if (pixel.IsExplored())
-      numExploredPixels++;
-
-  LOG(LINFO, ("Country:", countryId, "Num pixels:", numExplorablePixels, "Explored pixels:", numExploredPixels,
-              "Explored fraction:", static_cast<double>(numExploredPixels) / numExplorablePixels));
-}
-
 std::set<int64_t> StreetPixelsManager::ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const
 {
   std::set<int64_t> pixels;

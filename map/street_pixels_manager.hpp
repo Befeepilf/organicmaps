@@ -75,8 +75,6 @@ public:
 
   void UpdateExploredPixels();
 
-  void PrintExploredFractions() const;
-
   double GetExploredFraction(kml::TrackId trackId) const;
 
   double GetTotalExploredFraction() const;
