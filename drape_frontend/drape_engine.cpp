@@ -627,8 +627,12 @@ void DrapeEngine::UpdateStreetPixels(std::span<df::StreetPixel> & toAdd)
 
 void DrapeEngine::ClearStreetPixels()
 {
-  m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<ClearStreetPixelsMessage>(),
-                                  MessagePriority::Normal);
+  {
+    BaseBlockingMessage::Blocker blocker;
+    m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<ClearStreetPixelsMessage>(blocker),
+                                    MessagePriority::Normal);
+    blocker.Wait();
+  }
 }
 
 void DrapeEngine::EnableChoosePositionMode(bool enable, std::vector<m2::TriangleD> && boundAreaTriangles,

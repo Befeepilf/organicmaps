@@ -1006,9 +1006,13 @@ private:
   std::span<StreetPixel> & m_toAdd;
 };
 
-class ClearStreetPixelsMessage : public Message
+class ClearStreetPixelsMessage : public BaseBlockingMessage
 {
 public:
+  explicit ClearStreetPixelsMessage(Blocker & blocker)
+    : BaseBlockingMessage(blocker)
+  {}
+
   Type GetType() const override { return Type::ClearStreetPixels; }
 };
 

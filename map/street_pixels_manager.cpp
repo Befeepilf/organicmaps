@@ -182,25 +182,38 @@ std::set<std::int64_t> StreetPixelsManager::DeriveStreetPixelsFromFeatures(Featu
 
       bool isHighway = false;
       bool isPrivate = false;
+      bool isBikeAccessible = true;
+      bool isPedestrianAccessible = true;
       feature.ForEachType(
         [&](std::uint64_t type)
         {
           std::vector<std::string> types = c.GetFullObjectNamePath(type);
           if (types.size() > 0 && types[0] == "highway")
             isHighway = true;
-          if (types.size() >= 2 && types[0] == "hwtag" && types[1] == "private")
-            isPrivate = true;
+          if (types.size() >= 2 && types[0] == "hwtag")
+          {
+            if (types[1] == "private")
+              isPrivate = true;
+            else if (types[1] == "nobicycle")
+              isBikeAccessible = false;
+            else if (types[1] == "yesbicycle")
+              isBikeAccessible = true;
+            else if (types[1] == "nofoot")
+              isPedestrianAccessible = false;
+            else if (types[1] == "yesfoot")
+              isPedestrianAccessible = true;
+          }
         });
 
-      if (!isHighway || isPrivate)
+      if (!isHighway || isPrivate || (!isBikeAccessible && !isPedestrianAccessible))
         return;
 
-      auto const & types = feature::TypesHolder(feature);
-      bool isBicycleAccessible = routing::IsBicycleRoad(types);
-      bool isPedestrianAccessible = routing::PedestrianModel::AllLimitsInstance().HasRoadType(types);
+      // auto const & types = feature::TypesHolder(feature);
+      // bool isBicycleAccessible = routing::IsBicycleRoad(types);
+      // bool isPedestrianAccessible = routing::PedestrianModel::AllLimitsInstance().HasRoadType(types);
 
-      if (!isBicycleAccessible && !isPedestrianAccessible)
-        return;
+      // if (!isBicycleAccessible && !isPedestrianAccessible)
+      //   return;
 
       numStreets++;
 
@@ -425,25 +438,14 @@ std::set<int64_t> StreetPixelsManager::ComputeTrackPixels(kml::MultiGeometry::Li
   return pixels;
 }
 
-void StreetPixelsManager::ClearPixels()
-{
-  LOG(LINFO, ("Clearing pixels and unmapping pix file"));
-  m_mmapReader.reset();
-  m_streetPixels = {};
-
-  m_drapeEngine.SafeCall(&df::DrapeEngine::ClearStreetPixels);
-
-  {
-    std::lock_guard<std::mutex> lock(m_stateMutex);
-    ChangeState(StreetPixelsState{m_state.enabled, StreetPixelsStatus::NotReady});
-  }
-}
-
 void StreetPixelsManager::OnUpdateCurrentCountry(storage::CountryId const & countryId,
                                                  storage::LocalFilePtr const & localFile)
 {
   {
     std::lock_guard<std::mutex> lock(m_countryIdMutex);
+    LOG(LINFO, ("Country changed from", m_countryId, "to", countryId));
+    if (countryId == m_countryId)
+      return;
     m_countryId = countryId;
   }
 
@@ -465,7 +467,6 @@ void StreetPixelsManager::OnUpdateCurrentCountry(storage::CountryId const & coun
                         });
 }
 
-// Persistent storage for track exploration fractions.
 double StreetPixelsManager::GetExploredFraction(kml::TrackId trackId) const
 {
   std::lock_guard<std::mutex> lock(m_fractionMutex);
@@ -526,4 +527,17 @@ double StreetPixelsManager::GetTotalExploredFraction() const
     if (pixel.IsExplored())
       ++explored;
   return static_cast<double>(explored) / total;
+}
+
+void StreetPixelsManager::ClearPixels()
+{
+  LOG(LINFO, ("Clearing pixels and unmapping pix file"));
+  m_drapeEngine.SafeCall(&df::DrapeEngine::ClearStreetPixels);
+  m_streetPixels = {};
+  m_mmapReader.reset();
+
+  {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    ChangeState(StreetPixelsState{m_state.enabled, StreetPixelsStatus::NotReady});
+  }
 }

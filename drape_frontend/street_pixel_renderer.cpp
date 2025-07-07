@@ -208,6 +208,7 @@ void StreetPixelRenderer::Update() { m_needUpdate = true; }
 
 void StreetPixelRenderer::Clear()
 {
+  m_allPixels = {};
   m_tileBuckets.clear();
   ClearRenderData();
 }

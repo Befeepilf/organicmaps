@@ -320,7 +320,7 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
     {
       LOG(LINFO, ("Bookmarks created", marks.size()));
       GetSearchAPI().OnBookmarksCreated(marks);
-      // GetStreetPixelsManager().OnBookmarks∏Created();
+      GetStreetPixelsManager().UpdateExploredPixels();
     },
     [this](vector<BookmarkInfo> const & marks)
     {
