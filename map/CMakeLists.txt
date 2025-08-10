@@ -65,6 +65,10 @@ set(SRC
   track_statistics.hpp
   track_mark.cpp
   track_mark.hpp
+  identity_store.cpp
+  identity_store.hpp
+  friends_manager.cpp
+  friends_manager.hpp
   traffic_manager.cpp
   traffic_manager.hpp
   transit/transit_display.cpp

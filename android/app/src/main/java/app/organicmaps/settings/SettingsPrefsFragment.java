@@ -477,6 +477,7 @@ public class SettingsPrefsFragment extends BaseXmlSettingsFragment implements La
     });
   }
 
+
   private void removePreference(@NonNull String categoryKey, @NonNull Preference preference)
   {
     final PreferenceCategory category = getPreference(categoryKey);

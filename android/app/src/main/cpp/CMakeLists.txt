@@ -75,6 +75,7 @@ set(SRC
   app/organicmaps/platform/SecureStorage.cpp
   app/organicmaps/platform/SocketImpl.cpp
   app/organicmaps/util/Config.cpp
+  app/organicmaps/friends/FriendsManager.cpp
   app/organicmaps/util/GeoUtils.cpp
   app/organicmaps/util/HttpClient.cpp
   app/organicmaps/util/Language.cpp

@@ -101,6 +101,7 @@ import app.organicmaps.settings.DrivingOptionsActivity;
 import app.organicmaps.settings.RoadType;
 import app.organicmaps.settings.SettingsActivity;
 import app.organicmaps.settings.UnitLocale;
+import app.organicmaps.settings.MyAccountDialogFragment;
 import app.organicmaps.util.Config;
 import app.organicmaps.util.LocationUtils;
 import app.organicmaps.util.PowerManagment;
@@ -2426,12 +2427,19 @@ public class MwmActivity extends BaseMwmFragmentActivity
       mDonatesUrl = Config.getDonateUrl(getApplicationContext());
       if (!TextUtils.isEmpty(mDonatesUrl))
         items.add(new MenuBottomSheetItem(R.string.donate, R.drawable.ic_donate, this::onDonateOptionSelected));
+      items.add(new MenuBottomSheetItem(R.string.my_account, R.drawable.ic_account, this::onMyAccountOptionSelected));
       items.add(new MenuBottomSheetItem(R.string.settings, R.drawable.ic_settings, this::onSettingsOptionSelected));
       items.add(new MenuBottomSheetItem(R.string.start_track_recording, R.drawable.ic_track_recording_off, -1, this::onTrackRecordingOptionSelected));
       items.add(new MenuBottomSheetItem(R.string.share_my_location, R.drawable.ic_share, this::onShareLocationOptionSelected));
       return items;
     }
     return null;
+  }
+
+  private void onMyAccountOptionSelected()
+  {
+    closeFloatingPanels();
+    MyAccountDialogFragment.show(getSupportFragmentManager());
   }
 
   @Override

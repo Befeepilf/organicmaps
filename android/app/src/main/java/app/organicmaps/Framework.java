@@ -354,4 +354,10 @@ public class Framework
   public static native void nativeDidCloseProductsPopup(String reason);
 
   public static native void nativeDidSelectProduct(String title, String link);
+
+  public static native boolean nativeHasUsername();
+  @Nullable public static native String nativeGetUsername();
+  public static native boolean nativeSetUsername(@NonNull String username);
+  public static native boolean nativeGetExploreSharingEnabled();
+  public static native void nativeSetExploreSharingEnabled(boolean enabled);
 }

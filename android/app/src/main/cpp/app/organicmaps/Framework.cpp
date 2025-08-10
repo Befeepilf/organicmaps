@@ -18,6 +18,8 @@
 #include "map/bookmark_helpers.hpp"
 #include "map/chart_generator.hpp"
 #include "map/everywhere_search_params.hpp"
+#include "map/friends_manager.hpp"
+#include "map/identity_store.hpp"
 #include "map/user_mark.hpp"
 
 #include "storage/storage_defines.hpp"
@@ -843,6 +845,36 @@ Java_app_organicmaps_Framework_nativeGetAddress(JNIEnv * env, jclass clazz, jdou
   return jni::ToJavaString(env, info.FormatAddress());
 }
 
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeHasUsername(JNIEnv *, jclass)
+{
+  return static_cast<jboolean>(IdentityStore::HasUsername());
+}
+
+JNIEXPORT jstring JNICALL Java_app_organicmaps_Framework_nativeGetUsername(JNIEnv * env, jclass)
+{
+  auto const name = IdentityStore::GetUsername();
+  if (name.empty())
+    return nullptr;
+  return jni::ToJavaString(env, name);
+}
+
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeSetUsername(JNIEnv * env, jclass, jstring username)
+{
+  auto const name = jni::ToNativeString(env, username);
+  return static_cast<jboolean>(IdentityStore::SetUsername(name));
+}
+
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeGetExploreSharingEnabled(JNIEnv *, jclass)
+{
+  bool enabled = false;
+  settings::Get("Explore.SharingEnabled", enabled);
+  return static_cast<jboolean>(enabled);
+}
+
+JNIEXPORT void JNICALL Java_app_organicmaps_Framework_nativeSetExploreSharingEnabled(JNIEnv *, jclass, jboolean enabled)
+{
+  settings::Set("Explore.SharingEnabled", static_cast<bool>(enabled));
+}
 JNIEXPORT void JNICALL
 Java_app_organicmaps_Framework_nativeClearApiPoints(JNIEnv * env, jclass clazz)
 {

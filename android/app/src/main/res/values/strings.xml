@@ -387,6 +387,17 @@
     <!-- blue gray color -->
     <string name="blue_gray">Blue Gray</string>
 
+<!-- Exploration sharing settings -->
+<string name="pref_explore_sharing_title">Share exploration progress</string>
+<string name="pref_explore_username_title">Username</string>
+<string name="pref_explore_username_summary">Pick a username so friends can add you</string>
+<string name="pref_explore_username_hint">Allowed: a-z, 0-9, underscore; 3-20 chars</string>
+<string name="pref_explore_username_invalid">Invalid username. Use a-z, 0-9, underscore (3-20 chars).</string>
+<string name="my_account">My Account</string>
+<string name="friends_accepted">Friends</string>
+<string name="friends_incoming">Incoming requests</string>
+<string name="friends_outgoing">Outgoing requests</string>
+
     <!-- SECTION: Routing dialogs strings -->
     <string name="dialog_routing_disclaimer_title">When following the route, please keep in mind:</string>
     <string name="dialog_routing_disclaimer_priority">— Road conditions, traffic laws, and road signs always take priority over navigation hints;</string>

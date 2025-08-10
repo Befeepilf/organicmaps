@@ -31,7 +31,7 @@ public:
   template <typename T>
   std::span<T> DataSpan() const
   {
-    return {reinterpret_cast<T *>(Data() + m_offset), m_size / sizeof(T)};
+    return {reinterpret_cast<T *>(Data() + m_offset), static_cast<std::size_t>(m_size / sizeof(T))};
   }
 
 protected:

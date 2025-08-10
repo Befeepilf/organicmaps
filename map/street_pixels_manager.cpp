@@ -27,6 +27,7 @@
 
 #include "platform/location.hpp"
 #include "platform/platform.hpp"
+#include "platform/vibration.hpp"
 
 #include "routing/routing_helpers.hpp"
 #include "routing_common/bicycle_model.hpp"
@@ -414,7 +415,7 @@ std::set<int64_t> StreetPixelsManager::ComputeTrackPixels(kml::MultiGeometry::Li
 
 void StreetPixelsManager::AddPixelsInRadius(double lat, double lon, std::set<std::int64_t> & pixels) const
 {
-  double constexpr kExploreRadiusMeters = 25.0;
+  double constexpr kExploreRadiusMeters = 20.0;
   double constexpr kEarthRadiusMeters = 6371000.0;
   double constexpr kRadiusRads = kExploreRadiusMeters / kEarthRadiusMeters;
 
@@ -436,6 +437,7 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
   auto const latlon = info.GetLatLon();
   std::set<std::int64_t> pixels;
   AddPixelsInRadius(latlon.m_lat, latlon.m_lon, pixels);
+  size_t numNewlyExploredPixels = 0;
   for (auto const & pix : pixels)
   {
     auto * pixel = FindStreetPixel(pix);
@@ -443,6 +445,20 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
       continue;
     pixel->SetExplored(true);
     msync(pixel, sizeof(df::StreetPixel), MS_ASYNC);
+    numNewlyExploredPixels++;
+  }
+
+  if (numNewlyExploredPixels == 1)
+    platform::Vibrate(50);
+  else if (numNewlyExploredPixels > 1)
+  {
+    size_t const maxPixels = 5;  // Limit to avoid too long vibration
+    size_t const count = std::min(numNewlyExploredPixels, maxPixels);
+
+    std::vector<uint32_t> durations(count, 30);
+    std::vector<uint32_t> delays(count, 20);
+
+    platform::VibratePattern(durations.data(), delays.data(), count);
   }
 }
 
