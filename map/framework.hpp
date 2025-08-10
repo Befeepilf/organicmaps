@@ -4,6 +4,7 @@
 #include "map/bookmark.hpp"
 #include "map/bookmark_manager.hpp"
 #include "map/earth_chunk_manager.hpp"
+#include "map/explore_stats_service.hpp"
 #include "map/features_fetcher.hpp"
 #include "map/isolines_manager.hpp"
 #include "map/mwm_url.hpp"
@@ -196,6 +197,7 @@ protected:
 
   std::unique_ptr<EarthChunkManager> m_earthChunkManager;
   std::unique_ptr<StreetPixelsManager> m_streetPixelsManager;
+  std::unique_ptr<ExploreStatsService> m_exploreStatsService;
 
   SearchMarks m_searchMarks;
 
@@ -314,6 +316,10 @@ public:
 
   StreetPixelsManager & GetStreetPixelsManager();
   StreetPixelsManager const & GetStreetPixelsManager() const;
+
+  void EnableExploreSharing(bool enabled);
+  bool IsExploreSharingEnabled() const;
+  void TriggerExploreStatsUpload();
 
   /// @name Visualize utilities, used in desktop only. Implemented in framework_visualize.cpp
   /// @{

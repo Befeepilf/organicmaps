@@ -23,6 +23,7 @@
 #include "geometry/point2d.hpp"
 #include "geometry/point_with_altitude.hpp"
 
+#include "kml/type_utils.hpp"
 #include "map/track.hpp"
 
 #include "platform/location.hpp"
@@ -42,6 +43,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+
 namespace hp
 {
 T_Healpix_Base<std::int64_t> const & GetHealpixBase()
@@ -95,6 +97,11 @@ void StreetPixelsManager::OnBookmarksCreated()
 {
   m_tracksLoaded = true;
   UpdateExploredPixels();
+}
+
+void StreetPixelsManager::SetExplorationListener(ExplorationListener const & listener)
+{
+  m_explorationListener = listener;
 }
 
 void StreetPixelsManager::LoadStreetPixels(storage::LocalFilePtr const & localFile)
@@ -303,9 +310,16 @@ void StreetPixelsManager::UpdateExploredPixels()
   }
 
   LOG(LINFO, ("Collecting tracks"));
-  std::vector<std::pair<kml::TrackId, kml::MultiGeometry::LineT>> tracks;
+  struct TrackInfo
+  {
+    kml::TrackId id;
+    kml::MultiGeometry::LineT geom;
+    kml::Timestamp ts;
+  };
+  std::vector<TrackInfo> tracks;
   std::unordered_map<kml::TrackId, double> trackExploredFraction;
-  m_bmManager->ForEachTrackSortedByTimestamp([&](Track const & t) { tracks.emplace_back(t.GetId(), t.GetGeometry()); });
+  m_bmManager->ForEachTrackSortedByTimestamp(
+    [&](Track const & t) { tracks.push_back(TrackInfo{t.GetId(), t.GetGeometry(), t.GetData().m_timestamp}); });
 
   storage::CountryId countryId;
   {
@@ -317,7 +331,7 @@ void StreetPixelsManager::UpdateExploredPixels()
     Platform::Thread::Background,
     [this, tracks = std::move(tracks), trackExploredFraction, countryId]() mutable
     {
-      for (auto const & [trackId, geometry] : tracks)
+      for (auto const & ti : tracks)
       {
         {
           std::lock_guard<std::mutex> lock(m_countryIdMutex);
@@ -328,12 +342,12 @@ void StreetPixelsManager::UpdateExploredPixels()
           }
         }
 
-        if (HasExploredFraction(trackId))
+        if (HasExploredFraction(ti.id))
           continue;
 
-        LOG(LINFO, ("Computing track pixels for", trackId));
+        LOG(LINFO, ("Computing track pixels for", ti.id));
 
-        auto trackPixels = ComputeTrackPixels(geometry);
+        auto trackPixels = ComputeTrackPixels(ti.geom);
         std::set<int64_t> newPixels;
         {
           for (auto pix : trackPixels)
@@ -347,11 +361,29 @@ void StreetPixelsManager::UpdateExploredPixels()
           }
         }
 
-        trackExploredFraction[trackId] =
+        trackExploredFraction[ti.id] =
           trackPixels.empty() ? 0.0
                               : static_cast<double>(newPixels.size()) / static_cast<double>(m_streetPixels.size());
 
-        LOG(LINFO, ("Track", trackId, "explored fraction:", trackExploredFraction[trackId]));
+        LOG(LINFO, ("Track", ti.id, "explored fraction:", trackExploredFraction[ti.id]));
+
+        if (!m_explorationListener)
+        {
+          LOG(LWARNING, ("No exploration listener"));
+        }
+        if (newPixels.empty())
+        {
+          LOG(LWARNING, ("No new pixels"));
+        }
+
+        if (!newPixels.empty() && m_explorationListener)
+        {
+          ExplorationDelta d;
+          d.m_regionId = countryId;
+          d.m_newPixels = static_cast<uint32_t>(newPixels.size());
+          d.m_eventTimeSec = static_cast<double>(kml::ToSecondsSinceEpoch(ti.ts));
+          m_explorationListener(d);
+        }
       }
 
       {
@@ -448,6 +480,18 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
     numNewlyExploredPixels++;
   }
 
+  if (numNewlyExploredPixels > 0 && m_explorationListener)
+  {
+    ExplorationDelta d;
+    {
+      std::lock_guard<std::mutex> lock(m_countryIdMutex);
+      d.m_regionId = m_countryId;
+    }
+    d.m_newPixels = static_cast<uint32_t>(numNewlyExploredPixels);
+    d.m_eventTimeSec = info.m_timestamp;
+    m_explorationListener(d);
+  }
+
   if (numNewlyExploredPixels == 1)
     platform::Vibrate(50);
   else if (numNewlyExploredPixels > 1)
@@ -460,6 +504,12 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
 
     platform::VibratePattern(durations.data(), delays.data(), count);
   }
+}
+
+std::string StreetPixelsManager::GetCurrentCountryId() const
+{
+  std::lock_guard<std::mutex> lock(m_countryIdMutex);
+  return m_countryId;
 }
 
 void StreetPixelsManager::OnUpdateCurrentCountry(storage::CountryId const & countryId,

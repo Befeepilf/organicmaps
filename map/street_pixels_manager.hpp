@@ -28,6 +28,7 @@
 #include <mutex>
 #include <set>
 #include <span>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -88,6 +89,15 @@ public:
 
   void OnLocationUpdate(location::GpsInfo const & info);
 
+  struct ExplorationDelta
+  {
+    std::string m_regionId;
+    uint32_t m_newPixels = 0;
+    double m_eventTimeSec = 0.0;
+  };
+  using ExplorationListener = std::function<void(ExplorationDelta const &)>;
+  void SetExplorationListener(ExplorationListener const & listener);
+
 private:
   StreetPixelsState m_state;
   StreetPixelsStateChangedFn m_onStateChangedFn;
@@ -118,4 +128,6 @@ private:
 
   std::set<int64_t> ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const;
   void AddPixelsInRadius(double lat, double lon, std::set<std::int64_t> & pixels) const;
+  std::string GetCurrentCountryId() const;
+  ExplorationListener m_explorationListener;
 };

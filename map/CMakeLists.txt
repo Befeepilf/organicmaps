@@ -67,6 +67,8 @@ set(SRC
   track_mark.hpp
   identity_store.cpp
   identity_store.hpp
+  explore_stats_service.cpp
+  explore_stats_service.hpp
   friends_manager.cpp
   friends_manager.hpp
   traffic_manager.cpp

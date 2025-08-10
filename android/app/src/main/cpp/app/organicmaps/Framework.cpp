@@ -866,14 +866,17 @@ JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeSetUsername(JNIE
 
 JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeGetExploreSharingEnabled(JNIEnv *, jclass)
 {
-  bool enabled = false;
-  settings::Get("Explore.SharingEnabled", enabled);
-  return static_cast<jboolean>(enabled);
+  return static_cast<jboolean>(frm()->IsExploreSharingEnabled());
 }
 
 JNIEXPORT void JNICALL Java_app_organicmaps_Framework_nativeSetExploreSharingEnabled(JNIEnv *, jclass, jboolean enabled)
 {
-  settings::Set("Explore.SharingEnabled", static_cast<bool>(enabled));
+  frm()->EnableExploreSharing(static_cast<bool>(enabled));
+}
+
+JNIEXPORT void JNICALL Java_app_organicmaps_Framework_nativeTriggerExploreStatsUpload(JNIEnv *, jclass)
+{
+  frm()->TriggerExploreStatsUpload();
 }
 JNIEXPORT void JNICALL
 Java_app_organicmaps_Framework_nativeClearApiPoints(JNIEnv * env, jclass clazz)

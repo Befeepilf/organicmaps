@@ -187,6 +187,23 @@ void Framework::OnLocationUpdate(GpsInfo const & info)
   m_streetPixelsManager->OnLocationUpdate(rInfo);
 }
 
+void Framework::EnableExploreSharing(bool enabled)
+{
+  if (m_exploreStatsService)
+    m_exploreStatsService->EnableSharing(enabled);
+}
+
+bool Framework::IsExploreSharingEnabled() const
+{
+  return m_exploreStatsService && m_exploreStatsService->IsSharingEnabled();
+}
+
+void Framework::TriggerExploreStatsUpload()
+{
+  if (m_exploreStatsService)
+    m_exploreStatsService->TryUpload();
+}
+
 void Framework::OnCompassUpdate(CompassInfo const & info)
 {
 #ifdef FIXED_LOCATION
@@ -258,6 +275,7 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
   : m_enabledDiffs(params.m_enableDiffs)
   , m_earthChunkManager(std::make_unique<EarthChunkManager>())
   , m_streetPixelsManager(std::make_unique<StreetPixelsManager>())
+  , m_exploreStatsService(std::make_unique<ExploreStatsService>())
   , m_isRenderingEnabled(true)
   , m_transitManager(
       m_featuresFetcher.GetDataSource(), [this](FeatureCallback const & fn, vector<FeatureID> const & features)
@@ -358,6 +376,13 @@ Framework::Framework(FrameworkParams const & params, bool loadMaps)
   m_routingManager.SetBookmarkManager(m_bmManager.get());
   m_searchMarks.SetBookmarkManager(m_bmManager.get());
   m_streetPixelsManager->SetBookmarkManager(m_bmManager.get());
+
+  m_streetPixelsManager->SetExplorationListener(
+    [this](StreetPixelsManager::ExplorationDelta const & d)
+    {
+      if (m_exploreStatsService)
+        m_exploreStatsService->OnExplorationDelta(d.m_regionId, d.m_newPixels, d.m_eventTimeSec);
+    });
 
   m_routingManager.SetTransitManager(&m_transitManager);
 
