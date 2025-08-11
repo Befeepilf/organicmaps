@@ -198,7 +198,10 @@ std::set<std::int64_t> StreetPixelsManager::DeriveStreetPixelsFromFeatures(Featu
         {
           std::vector<std::string> types = c.GetFullObjectNamePath(type);
           if (types.size() > 0 && types[0] == "highway")
-            isHighway = true;
+          {
+            if (types.size() < 3 || (types[2] != "driveway" && types[2] != "tunnel"))
+              isHighway = true;
+          }
           if (types.size() >= 2 && types[0] == "hwtag")
           {
             if (types[1] == "private")
