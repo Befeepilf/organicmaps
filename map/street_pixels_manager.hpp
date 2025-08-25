@@ -12,6 +12,8 @@
 #include "geometry/point2d.hpp"
 #include "geometry/rect2d.hpp"
 
+#include "coding/file_reader.hpp"
+#include "coding/file_writer.hpp"
 #include "coding/mmap_reader.hpp"
 
 #include "indexer/features_vector.hpp"
@@ -130,4 +132,14 @@ private:
   void AddPixelsInRadius(double lat, double lon, std::set<std::int64_t> & pixels) const;
   std::string GetCurrentCountryId() const;
   ExplorationListener m_explorationListener;
+
+  // Accounted bitset (.pixa) for stats aggregation
+  std::vector<uint8_t> m_accountedBits;
+  bool m_accountedDirty = false;
+  void LoadAccountedBits();
+  void SaveAccountedBits();
+  std::string GetAccountedFilePath() const;
+  bool IsAccountedIndex(size_t idx) const;
+  void SetAccountedIndex(size_t idx);
+  size_t GetPixelIndex(df::StreetPixel const * ptr) const;
 };

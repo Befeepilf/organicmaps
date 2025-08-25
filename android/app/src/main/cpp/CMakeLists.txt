@@ -83,6 +83,7 @@ set(SRC
   app/organicmaps/util/NetworkPolicy.cpp
   app/organicmaps/util/StringUtils.cpp
   app/organicmaps/util/UiThread.cpp
+  app/organicmaps/stats/ExploreStats.cpp
   app/organicmaps/vulkan/android_vulkan_context_factory.cpp
 )
 

@@ -45,6 +45,28 @@ bool ExploreStatsService::IsSharingEnabled() const
   return m_sharingEnabled;
 }
 
+void ExploreStatsService::GetEntries(std::vector<StatsEntry> & out) const
+{
+  std::lock_guard<std::mutex> lock(m_mutex);
+  out.clear();
+  out.reserve(m_keyToEntry.size());
+  for (auto const & kv : m_keyToEntry)
+    out.push_back(kv.second);
+}
+
+void ExploreStatsService::ResetRegion(std::string const & regionId)
+{
+  std::lock_guard<std::mutex> lock(m_mutex);
+  for (auto it = m_keyToEntry.begin(); it != m_keyToEntry.end();)
+  {
+    if (it->second.m_regionId == regionId)
+      it = m_keyToEntry.erase(it);
+    else
+      ++it;
+  }
+  ScheduleSave();
+}
+
 uint64_t ExploreStatsService::ToWeekBucket(uint64_t s)
 {
   // 7 days per bucket

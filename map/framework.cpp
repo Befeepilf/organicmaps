@@ -39,6 +39,7 @@
 #include "indexer/scales.hpp"
 #include "indexer/transliteration_loader.hpp"
 
+#include "platform/locale.hpp"
 #include "platform/localization.hpp"
 #include "platform/measurement_utils.hpp"
 #include "platform/mwm_version.hpp"
@@ -64,6 +65,8 @@
 #include "base/string_utils.hpp"
 
 #include "std/target_os.hpp"
+
+#include "storage/country_name_getter.hpp"
 
 #include "defines.hpp"
 
@@ -202,6 +205,45 @@ void Framework::TriggerExploreStatsUpload()
 {
   if (m_exploreStatsService)
     m_exploreStatsService->TryUpload();
+}
+
+void Framework::GetExploreStatsRegions(std::vector<std::pair<std::string, std::string>> & outRegions) const
+{
+  outRegions.clear();
+  if (!m_exploreStatsService)
+    return;
+  std::vector<ExploreStatsService::StatsEntry> entries;
+  m_exploreStatsService->GetEntries(entries);
+  std::unordered_set<std::string> unique;
+  for (auto const & e : entries)
+    unique.insert(e.m_regionId);
+  storage::CountryNameGetter nameGetter;
+  nameGetter.SetLocale(platform::GetCurrentLocale().m_language);
+  outRegions.reserve(unique.size());
+  for (auto const & id : unique)
+    outRegions.emplace_back(id, nameGetter(id));
+}
+
+void Framework::GetExploreStatsAggregatedWeeks(std::vector<std::pair<uint64_t, uint64_t>> & outWeeks,
+                                               std::string const & regionIdFilter) const
+{
+  outWeeks.clear();
+  if (!m_exploreStatsService)
+    return;
+  std::vector<ExploreStatsService::StatsEntry> entries;
+  m_exploreStatsService->GetEntries(entries);
+  std::unordered_map<uint64_t, uint64_t> sums;
+  bool const filter = !regionIdFilter.empty();
+  for (auto const & e : entries)
+  {
+    if (filter && e.m_regionId != regionIdFilter)
+      continue;
+    sums[e.m_weekStartSec] += e.m_exploredPixels;
+  }
+  outWeeks.reserve(sums.size());
+  for (auto const & kv : sums)
+    outWeeks.emplace_back(kv.first, kv.second);
+  std::sort(outWeeks.begin(), outWeeks.end(), [](auto const & a, auto const & b) { return a.first < b.first; });
 }
 
 void Framework::OnCompassUpdate(CompassInfo const & info)

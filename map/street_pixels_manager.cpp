@@ -146,6 +146,7 @@ void StreetPixelsManager::LoadStreetPixels(storage::LocalFilePtr const & localFi
   m_drapeEngine.SafeCall(&df::DrapeEngine::UpdateStreetPixels, m_streetPixels);
 
   LOG(LINFO, ("Loaded", m_streetPixels.size(), "total street pixels"));
+  LoadAccountedBits();
 }
 
 void StreetPixelsManager::LoadStreetPixelsFromFile(storage::CountryId const & countryId)
@@ -351,39 +352,41 @@ void StreetPixelsManager::UpdateExploredPixels()
         LOG(LINFO, ("Computing track pixels for", ti.id));
 
         auto trackPixels = ComputeTrackPixels(ti.geom);
-        std::set<int64_t> newPixels;
+        size_t statsNew = 0;
+        std::set<int64_t> renderNew;
+        for (auto pix : trackPixels)
         {
-          for (auto pix : trackPixels)
+          auto * pixel = FindStreetPixel(pix);
+          if (pixel == nullptr)
+            continue;
+          if (!pixel->IsExplored())
           {
-            auto * pixel = FindStreetPixel(pix);
-            if (pixel == nullptr || pixel->IsExplored())
-              continue;
             pixel->SetExplored(true);
             msync(pixel, sizeof(df::StreetPixel), MS_ASYNC);
-            newPixels.insert(pix);
+            renderNew.insert(pix);
+          }
+          if (!m_accountedBits.empty())
+          {
+            size_t idx = GetPixelIndex(pixel);
+            if (!IsAccountedIndex(idx))
+            {
+              SetAccountedIndex(idx);
+              ++statsNew;
+            }
           }
         }
 
         trackExploredFraction[ti.id] =
           trackPixels.empty() ? 0.0
-                              : static_cast<double>(newPixels.size()) / static_cast<double>(m_streetPixels.size());
+                              : static_cast<double>(renderNew.size()) / static_cast<double>(m_streetPixels.size());
 
         LOG(LINFO, ("Track", ti.id, "explored fraction:", trackExploredFraction[ti.id]));
 
-        if (!m_explorationListener)
-        {
-          LOG(LWARNING, ("No exploration listener"));
-        }
-        if (newPixels.empty())
-        {
-          LOG(LWARNING, ("No new pixels"));
-        }
-
-        if (!newPixels.empty() && m_explorationListener)
+        if (statsNew > 0 && m_explorationListener)
         {
           ExplorationDelta d;
           d.m_regionId = countryId;
-          d.m_newPixels = static_cast<uint32_t>(newPixels.size());
+          d.m_newPixels = static_cast<uint32_t>(statsNew);
           d.m_eventTimeSec = static_cast<double>(kml::ToSecondsSinceEpoch(ti.ts));
           m_explorationListener(d);
         }
@@ -406,6 +409,8 @@ void StreetPixelsManager::UpdateExploredPixels()
       LOG(LINFO, ("Calculated explored fractions"));
 
       SaveExploredFractions();
+      if (m_accountedDirty)
+        SaveAccountedBits();
 
       // Notify UI that exploration data updated even if status unchanged.
       if (m_onStateChangedFn)
@@ -481,6 +486,25 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
     pixel->SetExplored(true);
     msync(pixel, sizeof(df::StreetPixel), MS_ASYNC);
     numNewlyExploredPixels++;
+    if (!m_accountedBits.empty())
+    {
+      size_t idx = GetPixelIndex(pixel);
+      if (!IsAccountedIndex(idx))
+      {
+        SetAccountedIndex(idx);
+        if (m_explorationListener)
+        {
+          ExplorationDelta d;
+          {
+            std::lock_guard<std::mutex> lock(m_countryIdMutex);
+            d.m_regionId = m_countryId;
+          }
+          d.m_newPixels = 1;
+          d.m_eventTimeSec = info.m_timestamp;
+          m_explorationListener(d);
+        }
+      }
+    }
   }
 
   if (numNewlyExploredPixels > 0 && m_explorationListener)

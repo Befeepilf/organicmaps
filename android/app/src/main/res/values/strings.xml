@@ -397,6 +397,8 @@
 <string name="friends_accepted">Friends</string>
 <string name="friends_incoming">Incoming requests</string>
 <string name="friends_outgoing">Outgoing requests</string>
+<string name="explore_stats">My Exploration</string>
+<string name="all_regions">All regions</string>
 
     <!-- SECTION: Routing dialogs strings -->
     <string name="dialog_routing_disclaimer_title">When following the route, please keep in mind:</string>

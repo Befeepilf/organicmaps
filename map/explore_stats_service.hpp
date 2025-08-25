@@ -20,11 +20,6 @@ public:
   void EnableSharing(bool enabled);
   bool IsSharingEnabled() const;
 
-  void OnExplorationDelta(std::string const & regionId, uint32_t deltaPixels, double eventTimeSeconds);
-
-  void TryUpload();
-
-private:
   struct StatsEntry
   {
     std::string m_regionId;
@@ -36,6 +31,14 @@ private:
                                     visitor(m_exploredPixels, "explored"), visitor(m_version, "version"))
   };
 
+  void GetEntries(std::vector<StatsEntry> & out) const;
+  void ResetRegion(std::string const & regionId);
+
+  void OnExplorationDelta(std::string const & regionId, uint32_t deltaPixels, double eventTimeSeconds);
+
+  void TryUpload();
+
+private:
   struct Snapshot
   {
     std::vector<StatsEntry> m_entries;

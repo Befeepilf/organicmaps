@@ -320,6 +320,9 @@ public:
   void EnableExploreSharing(bool enabled);
   bool IsExploreSharingEnabled() const;
   void TriggerExploreStatsUpload();
+  void GetExploreStatsRegions(std::vector<std::pair<std::string, std::string>> & outRegions) const;
+  void GetExploreStatsAggregatedWeeks(std::vector<std::pair<uint64_t, uint64_t>> & outWeeks,
+                                      std::string const & regionIdFilter) const;
 
   /// @name Visualize utilities, used in desktop only. Implemented in framework_visualize.cpp
   /// @{
