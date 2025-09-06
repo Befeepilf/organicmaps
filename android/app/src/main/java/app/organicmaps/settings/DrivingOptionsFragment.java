@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.SeekBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,6 +15,7 @@ import androidx.appcompat.widget.SwitchCompat;
 import app.organicmaps.R;
 import app.organicmaps.base.BaseMwmToolbarFragment;
 import app.organicmaps.routing.RoutingController;
+import app.organicmaps.sdk.Router;
 import app.organicmaps.sdk.routing.RoutingOptions;
 
 import java.util.ArrayList;
@@ -28,6 +30,13 @@ public class DrivingOptionsFragment extends BaseMwmToolbarFragment
   public static final String BUNDLE_ROAD_TYPES = "road_types";
   @NonNull
   private Set<RoadType> mRoadTypes = Collections.emptySet();
+  @Nullable
+  private Router mRouterType = null;
+
+  public void setRouterType(@Nullable Router routerType)
+  {
+    mRouterType = routerType;
+  }
 
   @Nullable
   @Override
@@ -90,29 +99,88 @@ public class DrivingOptionsFragment extends BaseMwmToolbarFragment
 
   private void initViews(@NonNull View root)
   {
-    SwitchCompat tollsBtn = root.findViewById(R.id.avoid_tolls_btn);
-    tollsBtn.setChecked(RoutingOptions.hasOption(RoadType.Toll));
-    CompoundButton.OnCheckedChangeListener tollBtnListener =
-        new ToggleRoutingOptionListener(RoadType.Toll);
-    tollsBtn.setOnCheckedChangeListener(tollBtnListener);
+    // Show/hide containers based on router type
+    View drivingOptionsContainer = root.findViewById(R.id.driving_options_container);
+    View trailOptionsContainer = root.findViewById(R.id.trail_options_container);
 
-    SwitchCompat motorwaysBtn = root.findViewById(R.id.avoid_motorways_btn);
-    motorwaysBtn.setChecked(RoutingOptions.hasOption(RoadType.Motorway));
-    CompoundButton.OnCheckedChangeListener motorwayBtnListener =
-        new ToggleRoutingOptionListener(RoadType.Motorway);
-    motorwaysBtn.setOnCheckedChangeListener(motorwayBtnListener);
+    boolean isCarRouting = (mRouterType == null || mRouterType == Router.Vehicle);
+    boolean isTrailRouting = (mRouterType == Router.Pedestrian || mRouterType == Router.Bicycle);
 
-    SwitchCompat ferriesBtn = root.findViewById(R.id.avoid_ferries_btn);
-    ferriesBtn.setChecked(RoutingOptions.hasOption(RoadType.Ferry));
-    CompoundButton.OnCheckedChangeListener ferryBtnListener =
-        new ToggleRoutingOptionListener(RoadType.Ferry);
-    ferriesBtn.setOnCheckedChangeListener(ferryBtnListener);
+    drivingOptionsContainer.setVisibility(isCarRouting ? View.VISIBLE : View.GONE);
+    trailOptionsContainer.setVisibility(isTrailRouting ? View.VISIBLE : View.GONE);
 
-    SwitchCompat dirtyRoadsBtn = root.findViewById(R.id.avoid_dirty_roads_btn);
-    dirtyRoadsBtn.setChecked(RoutingOptions.hasOption(RoadType.Dirty));
-    CompoundButton.OnCheckedChangeListener dirtyBtnListener =
-        new ToggleRoutingOptionListener(RoadType.Dirty);
-    dirtyRoadsBtn.setOnCheckedChangeListener(dirtyBtnListener);
+    if (isCarRouting)
+    {
+      SwitchCompat tollsBtn = root.findViewById(R.id.avoid_tolls_btn);
+      tollsBtn.setChecked(RoutingOptions.hasOption(RoadType.Toll));
+      CompoundButton.OnCheckedChangeListener tollBtnListener =
+          new ToggleRoutingOptionListener(RoadType.Toll);
+      tollsBtn.setOnCheckedChangeListener(tollBtnListener);
+
+      SwitchCompat motorwaysBtn = root.findViewById(R.id.avoid_motorways_btn);
+      motorwaysBtn.setChecked(RoutingOptions.hasOption(RoadType.Motorway));
+      CompoundButton.OnCheckedChangeListener motorwayBtnListener =
+          new ToggleRoutingOptionListener(RoadType.Motorway);
+      motorwaysBtn.setOnCheckedChangeListener(motorwayBtnListener);
+
+      SwitchCompat ferriesBtn = root.findViewById(R.id.avoid_ferries_btn);
+      ferriesBtn.setChecked(RoutingOptions.hasOption(RoadType.Ferry));
+      CompoundButton.OnCheckedChangeListener ferryBtnListener =
+          new ToggleRoutingOptionListener(RoadType.Ferry);
+      ferriesBtn.setOnCheckedChangeListener(ferryBtnListener);
+
+      SwitchCompat dirtyRoadsBtn = root.findViewById(R.id.avoid_dirty_roads_btn);
+      dirtyRoadsBtn.setChecked(RoutingOptions.hasOption(RoadType.Dirty));
+      CompoundButton.OnCheckedChangeListener dirtyBtnListener =
+          new ToggleRoutingOptionListener(RoadType.Dirty);
+      dirtyRoadsBtn.setOnCheckedChangeListener(dirtyBtnListener);
+    }
+
+    if (isTrailRouting)
+    {
+      initTrailOptions(root);
+    }
+  }
+
+  private void initTrailOptions(@NonNull View root)
+  {
+    TrailRoutingSettings trailSettings = TrailRoutingSettings.LoadFromSettings();
+
+    SwitchCompat trailsBtn = root.findViewById(R.id.prefer_trails_btn);
+    trailsBtn.setChecked(trailSettings.m_preferTrails);
+
+    View trailPreferenceContainer = root.findViewById(R.id.trail_preference_container);
+    SeekBar trailPreferenceSlider = root.findViewById(R.id.trail_preference_slider);
+
+    trailPreferenceContainer.setVisibility(trailSettings.m_preferTrails ? View.VISIBLE : View.GONE);
+
+    trailPreferenceSlider.setProgress((int) trailSettings.m_trailPreference);
+
+    trailsBtn.setOnCheckedChangeListener((buttonView, isChecked) -> {
+      trailSettings.m_preferTrails = isChecked;
+      TrailRoutingSettings.SaveToSettings(trailSettings);
+      trailPreferenceContainer.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+    });
+
+    trailPreferenceSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+      @Override
+      public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        if (fromUser) {
+          trailSettings.m_trailPreference = progress;
+          TrailRoutingSettings.SaveToSettings(trailSettings);
+        }
+      }
+
+      @Override
+      public void onStartTrackingTouch(SeekBar seekBar) {
+        // Not needed
+      }
+
+      @Override
+      public void onStopTrackingTouch(SeekBar seekBar) {
+        // Not needed
+      }
+    });
   }
 
   private static class ToggleRoutingOptionListener implements CompoundButton.OnCheckedChangeListener

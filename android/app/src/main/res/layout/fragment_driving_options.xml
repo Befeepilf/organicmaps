@@ -16,6 +16,8 @@
     android:theme="@style/MwmWidget.ToolbarTheme"
     tools:ignore="UnusedAttribute">
   </androidx.appcompat.widget.Toolbar>
+<!-- Car routing options -->
+<LinearLayout android:id="@+id/driving_options_container" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
   <LinearLayout
     android:layout_marginTop="@dimen/margin_half_double_plus"
     android:orientation="horizontal"
@@ -104,4 +106,23 @@
       android:padding="@dimen/margin_half_double_plus"
       android:layout_height="match_parent"/>
   </LinearLayout>
+</LinearLayout>
+<!-- Trail options - shown for pedestrian/bicycle routing -->
+<LinearLayout android:id="@+id/trail_options_container" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone">
+  <TextView android:text="@string/routing_options_title" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/margin_base" android:layout_marginBottom="@dimen/margin_half" android:textColor="?android:attr/textColorPrimary"/>
+  <LinearLayout android:orientation="horizontal" android:minHeight="@dimen/height_block_base" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base">
+    <TextView android:text="@string/prefer_trails" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:textColor="?android:attr/textColorPrimary"/>
+    <androidx.appcompat.widget.SwitchCompat android:id="@+id/prefer_trails_btn" android:layout_width="wrap_content" android:layout_height="match_parent" android:padding="@dimen/margin_half_double_plus"/>
+  </LinearLayout>
+  <include layout="@layout/list_divider"/>
+  <LinearLayout android:id="@+id/trail_preference_container" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base" android:paddingTop="@dimen/margin_base" android:paddingBottom="@dimen/margin_base" android:visibility="gone">
+    <TextView android:text="@string/trail_preference" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary" android:layout_marginBottom="@dimen/margin_half"/>
+    <SeekBar android:id="@+id/trail_preference_slider" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="50" android:layout_marginBottom="@dimen/margin_quarter"/>
+    <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+      <TextView android:text="@string/trail_preference_fastest" android:textAppearance="?android:attr/textAppearanceSmall" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="?android:attr/textColorSecondary" android:gravity="start"/>
+      <TextView android:text="@string/trail_preference_trails_only" android:textAppearance="?android:attr/textAppearanceSmall" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="?android:attr/textColorSecondary" android:gravity="end"/>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>
+
 </LinearLayout>

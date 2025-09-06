@@ -523,7 +523,7 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
     platform::Vibrate(50);
   else if (numNewlyExploredPixels > 1)
   {
-    size_t const maxPixels = 5;  // Limit to avoid too long vibration
+    size_t const maxPixels = 10;  // Limit to avoid too long vibration
     size_t const count = std::min(numNewlyExploredPixels, maxPixels);
 
     std::vector<uint32_t> durations(count, 30);
@@ -642,9 +642,93 @@ void StreetPixelsManager::ClearPixels()
   m_drapeEngine.SafeCall(&df::DrapeEngine::ClearStreetPixels);
   m_streetPixels = {};
   m_mmapReader.reset();
+  m_accountedBits.clear();
+  m_accountedDirty = false;
 
   {
     std::lock_guard<std::mutex> lock(m_stateMutex);
     ChangeState(StreetPixelsState{m_state.enabled, StreetPixelsStatus::NotReady});
   }
+}
+
+std::string StreetPixelsManager::GetAccountedFilePath() const
+{
+  storage::CountryId country;
+  {
+    std::lock_guard<std::mutex> lock(m_countryIdMutex);
+    country = m_countryId;
+  }
+  return GetPlatform().WritablePathForFile(country + ".pixa");
+}
+
+size_t StreetPixelsManager::GetPixelIndex(df::StreetPixel const * ptr) const
+{
+  if (m_streetPixels.empty())
+    return 0;
+  return ptr - m_streetPixels.data();
+}
+
+bool StreetPixelsManager::IsAccountedIndex(size_t idx) const
+{
+  if (m_accountedBits.empty() || idx >= m_accountedBits.size() * 8)
+    return false;
+  size_t byteIdx = idx / 8;
+  size_t bitIdx = idx % 8;
+  return (m_accountedBits[byteIdx] & (1 << bitIdx)) != 0;
+}
+
+void StreetPixelsManager::SetAccountedIndex(size_t idx)
+{
+  if (idx >= m_streetPixels.size())
+    return;
+
+  // Resize m_accountedBits if necessary
+  size_t requiredBytes = (idx + 8) / 8;  // +8 to round up
+  if (m_accountedBits.size() < requiredBytes)
+    m_accountedBits.resize(requiredBytes, 0);
+
+  size_t byteIdx = idx / 8;
+  size_t bitIdx = idx % 8;
+  m_accountedBits[byteIdx] |= (1 << bitIdx);
+  m_accountedDirty = true;
+}
+
+void StreetPixelsManager::LoadAccountedBits()
+{
+  std::string path = GetAccountedFilePath();
+  std::ifstream ifs(path, std::ios::binary);
+  if (!ifs.is_open())
+  {
+    LOG(LINFO, ("No accounted bits file for", GetCurrentCountryId()));
+    return;
+  }
+
+  ifs.seekg(0, std::ios::end);
+  size_t fileSize = ifs.tellg();
+  ifs.seekg(0, std::ios::beg);
+
+  m_accountedBits.resize(fileSize);
+  ifs.read(reinterpret_cast<char *>(m_accountedBits.data()), fileSize);
+  m_accountedDirty = false;
+
+  LOG(LINFO, ("Loaded", fileSize, "bytes of accounted bits for", GetCurrentCountryId()));
+}
+
+void StreetPixelsManager::SaveAccountedBits()
+{
+  if (!m_accountedDirty)
+    return;
+
+  std::string path = GetAccountedFilePath();
+  std::ofstream ofs(path, std::ios::binary | std::ios::trunc);
+  if (!ofs.is_open())
+  {
+    LOG(LWARNING, ("Failed to open accounted bits file for writing:", path));
+    return;
+  }
+
+  ofs.write(reinterpret_cast<char const *>(m_accountedBits.data()), m_accountedBits.size());
+  m_accountedDirty = false;
+
+  LOG(LINFO, ("Saved", m_accountedBits.size(), "bytes of accounted bits for", GetCurrentCountryId()));
 }

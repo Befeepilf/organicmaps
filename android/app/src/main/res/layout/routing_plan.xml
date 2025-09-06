@@ -127,6 +127,9 @@
             android:layout_marginTop="@dimen/routing_selector_wheel_margin"
             android:layout_marginBottom="@dimen/routing_selector_wheel_margin"
             android:layout_marginEnd="12dp"/>
+<!-- Gear icon button for routing options -->
+<ImageView android:id="@+id/routing_options_gear_btn" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:layout_marginStart="8dp" android:layout_marginEnd="16dp" android:background="?attr/selectableItemBackgroundBorderless" android:padding="@dimen/margin_half_double_plus" android:src="@drawable/ic_settings" android:contentDescription="@string/routing_options_title" android:visibility="gone" tools:visibility="visible" />
+
         </LinearLayout>
 
       </RelativeLayout>
@@ -134,44 +137,69 @@
     </androidx.appcompat.widget.Toolbar>
   </FrameLayout>
   <FrameLayout
-    android:id="@+id/driving_options_btn_container"
+android:id="@+id/routing_options_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/drivingOptionsViewBg"
-    android:foreground="@drawable/shadow_top"
+android:background="?attr/cardBackground"
     android:visibility="gone"
     tools:visibility="visible">
-    <RelativeLayout
-      android:id="@+id/driving_options_btn"
+<!-- Header with toggle button -->
+<LinearLayout android:id="@+id/routing_options_header"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:background="?attr/selectableItemBackgroundBorderless"
-      android:gravity="center"
+android:orientation="horizontal" android:paddingStart="@dimen/margin_base" android:paddingEnd="@dimen/margin_base" android:paddingTop="@dimen/margin_half_double_plus" android:paddingBottom="@dimen/margin_half_double_plus"
       android:minHeight="@dimen/height_block_base">
+<TextView android:id="@+id/routing_options_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:fontFamily="@string/robotoMedium" android:text="@string/routing_options_title" android:textAppearance="?android:attr/textAppearanceMedium" android:textColor="?android:attr/textColorPrimary" />
+<ImageView android:id="@+id/routing_options_toggle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:rotation="0" app:srcCompat="@drawable/ic_down" android:contentDescription="@string/expand" />
+</LinearLayout>
+
+<!-- Car routing options -->
+<LinearLayout android:id="@+id/car_routing_options_container" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone" tools:visibility="visible">
+<LinearLayout android:orientation="horizontal" android:minHeight="@dimen/height_block_base" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base">
+  <TextView android:text="@string/avoid_tolls" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:textColor="?android:attr/textColorPrimary"/>
+  <androidx.appcompat.widget.SwitchCompat android:id="@+id/avoid_tolls_btn" android:layout_width="wrap_content" android:layout_height="match_parent" android:padding="@dimen/margin_half_double_plus"/>
+</LinearLayout>
+<include layout="@layout/list_divider"/>
+<LinearLayout android:orientation="horizontal" android:minHeight="@dimen/height_block_base" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base">
+  <TextView android:text="@string/avoid_unpaved" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:textColor="?android:attr/textColorPrimary"/>
+  <androidx.appcompat.widget.SwitchCompat android:id="@+id/avoid_unpaved_btn" android:layout_width="wrap_content" android:layout_height="match_parent" android:padding="@dimen/margin_half_double_plus"/>
+</LinearLayout>
+<include layout="@layout/list_divider"/>
+<LinearLayout android:orientation="horizontal" android:minHeight="@dimen/height_block_base" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base">
+  <TextView android:text="@string/avoid_ferry" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:textColor="?android:attr/textColorPrimary"/>
+  <androidx.appcompat.widget.SwitchCompat android:id="@+id/avoid_ferry_btn" android:layout_width="wrap_content" android:layout_height="match_parent" android:padding="@dimen/margin_half_double_plus"/>
+</LinearLayout>
+<include layout="@layout/list_divider"/>
+
       <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <ImageView
-          android:id="@+id/driving_options_btn_img"
-          android:layout_width="@dimen/margin_base_plus"
-          android:layout_height="@dimen/margin_base_plus"
-          android:layout_gravity="center"
-          android:layout_marginEnd="@dimen/margin_half_plus_eight"
-          app:srcCompat="@drawable/ic_error_white" />
-        <TextView
-          android:id="@+id/driving_options_btn_title"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:layout_gravity="center"
-          android:fontFamily="@string/robotoMedium"
-          android:gravity="center"
-          android:textAllCaps="true"
-          android:textAppearance="?android:attr/textAppearanceSmall"
-          android:textColor="@color/text_light"
-          tools:ignore="UnusedAttribute"
-          tools:text="test" />
-      </LinearLayout>
-    </RelativeLayout>
+android:orientation="horizontal" android:minHeight="@dimen/height_block_base" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base">
+<TextView android:text="@string/avoid_motorways" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:textColor="?android:attr/textColorPrimary"/>
+<androidx.appcompat.widget.SwitchCompat android:id="@+id/avoid_motorways_btn"
+android:layout_width="wrap_content"
+android:layout_height="match_parent" android:padding="@dimen/margin_half_double_plus"/>
+</LinearLayout>
+</LinearLayout>
+
+<!-- Trail options - shown for pedestrian/bicycle routing -->
+<LinearLayout android:id="@+id/trail_options_container" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone" tools:visibility="visible">
+<LinearLayout android:orientation="horizontal" android:minHeight="@dimen/height_block_base" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base">
+<TextView android:text="@string/prefer_trails" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_gravity="center_vertical" android:textColor="?android:attr/textColorPrimary"/>
+<androidx.appcompat.widget.SwitchCompat android:id="@+id/prefer_trails_btn" android:layout_width="wrap_content" android:layout_height="match_parent" android:padding="@dimen/margin_half_double_plus"/>
+</LinearLayout>
+<include layout="@layout/list_divider"/>
+<LinearLayout android:id="@+id/trail_preference_container" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="@dimen/margin_base" android:paddingStart="@dimen/margin_base" android:paddingTop="@dimen/margin_base" android:paddingBottom="@dimen/margin_base" android:visibility="gone">
+<TextView android:text="@string/trail_preference" android:textAppearance="?android:attr/textAppearanceMedium" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="?android:attr/textColorPrimary" android:layout_marginBottom="@dimen/margin_half"/>
+<SeekBar android:id="@+id/trail_preference_slider" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="50" android:layout_marginBottom="@dimen/margin_quarter"/>
+<LinearLayout android:orientation="horizontal" android:layout_width="match_parent"
+android:layout_height="wrap_content">
+<TextView
+android:text="@string/trail_preference_fastest" android:textAppearance="?android:attr/textAppearanceSmall" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="?android:attr/textColorSecondary" android:gravity="start"/>
+<TextView android:text="@string/trail_preference_trails_only" android:textAppearance="?android:attr/textAppearanceSmall" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="?android:attr/textColorSecondary" android:gravity="end"/>
+</LinearLayout>
+</LinearLayout>
+</LinearLayout>
+
   </FrameLayout>
   <FrameLayout
     style="@style/MwmWidget.FrameLayout.Elevation"

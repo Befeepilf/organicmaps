@@ -38,7 +38,11 @@ public class RoutingPlanInplaceController extends RoutingPlanController
       mAnimator.removeAllListeners();
     }
     if (show)
+    {
       UiUtils.show(getFrame());
+      // Show gear button when routing plan becomes visible
+      showRoutingOptionsGearBtn();
+    }
 
     mAnimator = animateFrame(show, () -> {
       if (!show)
