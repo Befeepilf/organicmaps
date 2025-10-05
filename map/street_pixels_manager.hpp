@@ -16,6 +16,7 @@
 #include "coding/file_writer.hpp"
 #include "coding/mmap_reader.hpp"
 
+#include "indexer/data_source.hpp"
 #include "indexer/features_vector.hpp"
 
 #include "storage/storage.hpp"
@@ -58,7 +59,7 @@ public:
   using StreetPixelsStateChangedFn =
     std::function<void(bool enabled, StreetPixelsStatus status, std::string countryId)>;
 
-  StreetPixelsManager();
+  StreetPixelsManager(DataSource const & dataSource);
 
   StreetPixelsState GetState() const;
   void SetStateListener(StreetPixelsStateChangedFn const & onStateChangedFn);
@@ -101,6 +102,8 @@ public:
   void SetExplorationListener(ExplorationListener const & listener);
 
 private:
+  DataSource const & m_dataSource;
+
   StreetPixelsState m_state;
   StreetPixelsStateChangedFn m_onStateChangedFn;
   mutable std::mutex m_stateMutex;
@@ -128,10 +131,21 @@ private:
   void LoadExploredFractions();
   void SaveExploredFractions() const;
 
+  void UpdateStreetStatsForTrack(kml::MultiGeometry::LineT const & line);
+
+  void SegmentizeStreet(m2::PointD const & p1, m2::PointD const & p2,
+                        std::function<void(m2::PointD const &, double)> const & callback);
+
   std::set<int64_t> ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const;
   void AddPixelsInRadius(double lat, double lon, std::set<std::int64_t> & pixels) const;
+  bool IsExplorable(FeatureType & ft) const;
+
   std::string GetCurrentCountryId() const;
   ExplorationListener m_explorationListener;
+
+  // Updates heuristic stats for each street in the explore radius. Needed for routing to prefer streets with more
+  // unexplored pixels.
+  void UpdateStreetStats(double lat, double lon, size_t numNewlyExploredPixels);
 
   // Accounted bitset (.pixa) for stats aggregation
   std::vector<uint8_t> m_accountedBits;

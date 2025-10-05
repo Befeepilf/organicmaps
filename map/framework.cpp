@@ -316,7 +316,7 @@ void Framework::OnViewportChanged(ScreenBase const & screen)
 Framework::Framework(FrameworkParams const & params, bool loadMaps)
   : m_enabledDiffs(params.m_enableDiffs)
   , m_earthChunkManager(std::make_unique<EarthChunkManager>())
-  , m_streetPixelsManager(std::make_unique<StreetPixelsManager>())
+  , m_streetPixelsManager(std::make_unique<StreetPixelsManager>(m_featuresFetcher.GetDataSource()))
   , m_exploreStatsService(std::make_unique<ExploreStatsService>())
   , m_isRenderingEnabled(true)
   , m_transitManager(

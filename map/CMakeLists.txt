@@ -67,6 +67,8 @@ set(SRC
   track_mark.hpp
   identity_store.cpp
   identity_store.hpp
+  street_stats_db.cpp
+  street_stats_db.hpp
   explore_stats_service.cpp
   explore_stats_service.hpp
   friends_manager.cpp
@@ -107,6 +109,7 @@ target_link_libraries(${PROJECT_NAME}
   drape_frontend
   agg
   healpix
+  sqlite
 )
 
 omim_add_test_subdirectory(map_integration_tests)

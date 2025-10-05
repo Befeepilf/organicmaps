@@ -34,6 +34,16 @@
 #include "routing_common/bicycle_model.hpp"
 #include "routing_common/pedestrian_model.hpp"
 
+#include "map/street_stats_db.hpp"
+
+#include "indexer/feature_algo.hpp"
+#include "indexer/features_loader.hpp"
+
+#include "geometry/mercator.hpp"
+#include "geometry/parametrized_segment.hpp"
+
+#include "search/reverse_geocoder.hpp"
+
 #include <healpix_base.h>
 #include <healpix_tables.h>
 #include <sys/mman.h>
@@ -53,7 +63,13 @@ T_Healpix_Base<std::int64_t> const & GetHealpixBase()
 }
 }  // namespace hp
 
-StreetPixelsManager::StreetPixelsManager() {}
+double constexpr kExploreRadiusMeters = 20.0;
+double constexpr kEarthRadiusMeters = 6371000.0;
+double constexpr kRadiusRads = kExploreRadiusMeters / kEarthRadiusMeters;
+
+StreetPixelsManager::StreetPixelsManager(DataSource const & dataSource)
+  : m_dataSource(dataSource)
+{}
 
 StreetPixelsManager::StreetPixelsState StreetPixelsManager::GetState() const { return m_state; }
 
@@ -180,53 +196,25 @@ void StreetPixelsManager::SaveStreetPixelsToFile(std::set<std::int64_t> const & 
 
 std::set<std::int64_t> StreetPixelsManager::DeriveStreetPixelsFromFeatures(FeaturesVectorTest & featuresVector)
 {
-  std::vector<m2::PointD> points;
-  Classificator & c = classif();
+  MwmSet::MwmId mwmId;
+  {
+    std::lock_guard<std::mutex> lock(m_countryIdMutex);
+    if (m_countryId.empty())
+      return {};
+    mwmId = m_dataSource.GetMwmIdByCountryFile(storage::CountryFile(m_countryId));
+  }
 
+  if (!mwmId.IsAlive())
+    return {};
+
+  std::map<FeatureID, std::vector<uint32_t>> featurePixelIndices;
+  std::vector<m2::PointD> points;
   int numStreets = 0;
   featuresVector.GetVector().ForEach(
     [&](FeatureType & feature, std::uint64_t)
     {
-      if (feature.GetGeomType() != feature::GeomType::Line)
+      if (!IsExplorable(feature))
         return;
-
-      bool isHighway = false;
-      bool isPrivate = false;
-      bool isBikeAccessible = true;
-      bool isPedestrianAccessible = true;
-      feature.ForEachType(
-        [&](std::uint64_t type)
-        {
-          std::vector<std::string> types = c.GetFullObjectNamePath(type);
-          if (types.size() > 0 && types[0] == "highway")
-          {
-            if (types.size() < 3 || (types[2] != "driveway" && types[2] != "tunnel"))
-              isHighway = true;
-          }
-          if (types.size() >= 2 && types[0] == "hwtag")
-          {
-            if (types[1] == "private")
-              isPrivate = true;
-            else if (types[1] == "nobicycle")
-              isBikeAccessible = false;
-            else if (types[1] == "yesbicycle")
-              isBikeAccessible = true;
-            else if (types[1] == "nofoot")
-              isPedestrianAccessible = false;
-            else if (types[1] == "yesfoot")
-              isPedestrianAccessible = true;
-          }
-        });
-
-      if (!isHighway || isPrivate || (!isBikeAccessible && !isPedestrianAccessible))
-        return;
-
-      // auto const & types = feature::TypesHolder(feature);
-      // bool isBicycleAccessible = routing::IsBicycleRoad(types);
-      // bool isPedestrianAccessible = routing::PedestrianModel::AllLimitsInstance().HasRoadType(types);
-
-      // if (!isBicycleAccessible && !isPedestrianAccessible)
-      //   return;
 
       numStreets++;
 
@@ -236,33 +224,55 @@ std::set<std::int64_t> StreetPixelsManager::DeriveStreetPixelsFromFeatures(Featu
       if (numPoints < 2)
         return;
 
+      double accumulatedLengthM = 0;
       m2::PointD prevPoint = feature.GetPoint(0);
       for (size_t i = 1; i < numPoints; ++i)
       {
         auto const point = feature.GetPoint(i);
         points.push_back(prevPoint);
 
-        if (m2::AlmostEqualAbs(prevPoint, point, 1e-6))
-        {
-          continue;
-        }
+        SegmentizeStreet(prevPoint, point,
+                         [&](m2::PointD const & segmentPoint, double distFromPrevPoint)
+                         {
+                           points.push_back(segmentPoint);
+                           double const distanceAlongFeatureM = accumulatedLengthM + distFromPrevPoint;
+                           uint32_t const pixelIndex = static_cast<uint32_t>(distanceAlongFeatureM / 15.0);
+                           featurePixelIndices[feature.GetID()].push_back(pixelIndex);
+                         });
 
-        m2::PointD const p12 = point - prevPoint;
-        m2::PointD const p12Norm = p12.Normalize();
-
-        double const distanceMercator = p12.Length();
-        double const distanceMeters = mercator::DistanceOnEarth(prevPoint, point);
-        // segmentize into 15 meter segments
-        size_t const numSegments = std::ceil(distanceMeters / 15.0);
-        double const segmentSize = distanceMercator / numSegments;
-        for (size_t segment = 1; segment < numSegments; segment++)
-        {
-          m2::PointD const segmentPoint = prevPoint + p12Norm * (segment * segmentSize);
-          points.push_back(segmentPoint);
-        }
+        accumulatedLengthM += mercator::DistanceOnEarth(prevPoint, point);
         prevPoint = point;
       }
     });
+
+  auto & db = street_stats::StreetStatsDB::Instance();
+  for (auto const & [fid, pixelIndices] : featurePixelIndices)
+  {
+    auto bitmask = db.GetBitmask(fid.m_mwmId, fid.m_index);
+    if (!bitmask)
+    {
+      FeaturesLoaderGuard guard(m_dataSource, fid.m_mwmId);
+      auto ft = guard.GetFeatureByIndex(fid.m_index);
+      if (!ft)
+        continue;
+
+      double const length = feature::CalcLength(*ft, FeatureType::BEST_GEOMETRY);
+      size_t const numPixels = static_cast<size_t>(std::ceil(length / 15.0));
+      size_t const numBytes = (numPixels + 7) / 8;
+      bitmask.emplace(numBytes, 0);
+    }
+
+    for (uint32_t pixelIndex : pixelIndices)
+    {
+      size_t const byteIndex = pixelIndex / 8;
+      if (byteIndex < bitmask->size())
+      {
+        uint8_t const bitIndex = pixelIndex % 8;
+        (*bitmask)[byteIndex] |= (1 << bitIndex);
+      }
+    }
+    db.SaveBitmask(fid.m_mwmId, fid.m_index, *bitmask);
+  }
 
   std::set<std::int64_t> streetPixels;
   for (auto const & point : points)
@@ -280,6 +290,76 @@ std::set<std::int64_t> StreetPixelsManager::DeriveStreetPixelsFromFeatures(Featu
 
   LOG(LINFO, ("Found", streetPixels.size(), "street pixels for", numStreets, "streets"));
   return streetPixels;
+}
+
+void StreetPixelsManager::SegmentizeStreet(m2::PointD const & p1, m2::PointD const & p2,
+                                           std::function<void(m2::PointD const &, double)> const & callback)
+{
+  if (m2::AlmostEqualAbs(p1, p2, 1e-6))
+    return;
+
+  m2::PointD const p12 = p2 - p1;
+  m2::PointD const p12Norm = p12.Normalize();
+
+  double const distanceMercator = p12.Length();
+  double const distanceMeters = mercator::DistanceOnEarth(p1, p2);
+
+  // Corresponds to 15m segments.
+  size_t const numSegments = std::ceil(distanceMeters / 15.0);
+  if (numSegments <= 1)
+    return;
+
+  double const segmentSizeMercator = distanceMercator / numSegments;
+  for (size_t i = 1; i < numSegments; ++i)
+  {
+    m2::PointD const segmentPoint = p1 + p12Norm * (i * segmentSizeMercator);
+    double const distFromP1 = mercator::DistanceOnEarth(p1, segmentPoint);
+    callback(segmentPoint, distFromP1);
+  }
+}
+
+bool StreetPixelsManager::IsExplorable(FeatureType & ft) const
+{
+  if (ft.GetGeomType() != feature::GeomType::Line)
+    return false;
+
+  bool isHighway = false;
+  bool isPrivate = false;
+  bool isBikeAccessible = true;
+  bool isPedestrianAccessible = true;
+  Classificator & c = classif();
+  ft.ForEachType(
+    [&](std::uint64_t type)
+    {
+      std::vector<std::string> types = c.GetFullObjectNamePath(type);
+      if (types.size() > 0 && types[0] == "highway")
+      {
+        if (types.size() < 3 || (types[2] != "driveway" && types[2] != "tunnel"))
+          isHighway = true;
+      }
+      if (types.size() >= 2 && types[0] == "hwtag")
+      {
+        if (types[1] == "private")
+          isPrivate = true;
+        else if (types[1] == "nobicycle")
+          isBikeAccessible = false;
+        else if (types[1] == "yesbicycle")
+          isBikeAccessible = true;
+        else if (types[1] == "nofoot")
+          isPedestrianAccessible = false;
+        else if (types[1] == "yesfoot")
+          isPedestrianAccessible = true;
+      }
+    });
+
+  // auto const & types = feature::TypesHolder(feature);
+  // bool isBicycleAccessible = routing::IsBicycleRoad(types);
+  // bool isPedestrianAccessible = routing::PedestrianModel::AllLimitsInstance().HasRoadType(types);
+
+  // if (!isBicycleAccessible && !isPedestrianAccessible)
+  //   return;
+
+  return isHighway && !isPrivate && (isBikeAccessible || isPedestrianAccessible);
 }
 
 df::StreetPixel * StreetPixelsManager::FindStreetPixel(std::int64_t pixelId)
@@ -348,6 +428,8 @@ void StreetPixelsManager::UpdateExploredPixels()
 
         if (HasExploredFraction(ti.id))
           continue;
+
+        UpdateStreetStatsForTrack(ti.geom);
 
         LOG(LINFO, ("Computing track pixels for", ti.id));
 
@@ -425,6 +507,31 @@ void StreetPixelsManager::UpdateExploredPixels()
     });
 }
 
+void StreetPixelsManager::UpdateStreetStatsForTrack(kml::MultiGeometry::LineT const & line)
+{
+  if (line.empty())
+    return;
+
+  m2::PointD prev = geometry::GetPoint(line[0]);
+  for (size_t i = 1; i < line.size(); ++i)
+  {
+    auto const & ptWithAlt = line[i];
+    m2::PointD curr = geometry::GetPoint(ptWithAlt);
+    double distMerc = (curr - prev).Length();
+    double distMeters = mercator::DistanceOnEarth(prev, curr);
+    size_t segments = std::max<size_t>(1, static_cast<size_t>(std::ceil(distMeters / 10.0)));  // Sample every 10m
+    m2::PointD dir = (curr - prev).Normalize();
+    double step = distMerc / segments;
+    for (size_t s = 0; s <= segments; ++s)
+    {
+      m2::PointD p = prev + dir * (s * step);
+      auto const latlon = mercator::ToLatLon(p);
+      UpdateStreetStats(latlon.m_lat, latlon.m_lon, 1);
+    }
+    prev = curr;
+  }
+}
+
 std::set<int64_t> StreetPixelsManager::ComputeTrackPixels(kml::MultiGeometry::LineT const & line) const
 {
   std::set<int64_t> pixels;
@@ -455,10 +562,6 @@ std::set<int64_t> StreetPixelsManager::ComputeTrackPixels(kml::MultiGeometry::Li
 
 void StreetPixelsManager::AddPixelsInRadius(double lat, double lon, std::set<std::int64_t> & pixels) const
 {
-  double constexpr kExploreRadiusMeters = 20.0;
-  double constexpr kEarthRadiusMeters = 6371000.0;
-  double constexpr kRadiusRads = kExploreRadiusMeters / kEarthRadiusMeters;
-
   double const lat_rad = base::DegToRad(lat);
   double const lon_rad = base::DegToRad(lon);
   pointing ang(M_PI_2 - lat_rad, lon_rad);
@@ -474,9 +577,8 @@ void StreetPixelsManager::AddPixelsInRadius(double lat, double lon, std::set<std
 
 void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
 {
-  auto const latlon = info.GetLatLon();
   std::set<std::int64_t> pixels;
-  AddPixelsInRadius(latlon.m_lat, latlon.m_lon, pixels);
+  AddPixelsInRadius(info.m_latitude, info.m_longitude, pixels);
   size_t numNewlyExploredPixels = 0;
   for (auto const & pix : pixels)
   {
@@ -486,6 +588,7 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
     pixel->SetExplored(true);
     msync(pixel, sizeof(df::StreetPixel), MS_ASYNC);
     numNewlyExploredPixels++;
+
     if (!m_accountedBits.empty())
     {
       size_t idx = GetPixelIndex(pixel);
@@ -506,6 +609,8 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
       }
     }
   }
+
+  UpdateStreetStats(info.m_latitude, info.m_longitude, numNewlyExploredPixels);
 
   if (numNewlyExploredPixels > 0 && m_explorationListener)
   {
@@ -530,6 +635,100 @@ void StreetPixelsManager::OnLocationUpdate(location::GpsInfo const & info)
     std::vector<uint32_t> delays(count, 20);
 
     platform::VibratePattern(durations.data(), delays.data(), count);
+  }
+}
+
+void StreetPixelsManager::UpdateStreetStats(double lat, double lon, size_t numNewlyExploredPixels)
+{
+  if (numNewlyExploredPixels == 0)
+    return;
+
+  MwmSet::MwmId mwmId;
+  {
+    std::lock_guard<std::mutex> lock(m_countryIdMutex);
+    if (m_countryId.empty())
+      return;
+    mwmId = m_dataSource.GetMwmIdByCountryFile(storage::CountryFile(m_countryId));
+  }
+
+  if (!mwmId.IsAlive())
+    return;
+
+  m2::PointD centerMercator = mercator::FromLatLon(lat, lon);
+
+  std::map<FeatureID, std::set<uint32_t>> featureUpdates;
+
+  indexer::ForEachFeatureAtPoint(
+    m_dataSource,
+    [&](FeatureType & ft)
+    {
+      if (!IsExplorable(ft))
+        return;
+
+      ft.ParseGeometry(FeatureType::BEST_GEOMETRY);
+      size_t const pointsCount = ft.GetPointsCount();
+      if (pointsCount < 2)
+        return;
+
+      double minSqDist = std::numeric_limits<double>::max();
+      double distanceAlongFeatureM = -1.0;
+      double accumulatedLengthM = 0.0;
+
+      for (size_t i = 1; i < pointsCount; ++i)
+      {
+        m2::PointD const p1 = ft.GetPoint(i - 1);
+        m2::PointD const p2 = ft.GetPoint(i);
+
+        m2::ParametrizedSegment<m2::PointD> segment(p1, p2);
+        m2::PointD const closestPoint = segment.ClosestPointTo(centerMercator);
+        double const sqDist = centerMercator.SquaredLength(closestPoint);
+
+        if (sqDist < minSqDist)
+        {
+          minSqDist = sqDist;
+          distanceAlongFeatureM = accumulatedLengthM + mercator::DistanceOnEarth(p1, closestPoint);
+        }
+        accumulatedLengthM += mercator::DistanceOnEarth(p1, p2);
+      }
+
+      if (distanceAlongFeatureM >= 0)
+      {
+        // Corresponds to 15m segments, matching DeriveStreetPixelsFromFeatures.
+        uint32_t const pixelIndex = static_cast<uint32_t>(distanceAlongFeatureM / 15.0);
+        featureUpdates[ft.GetID()].insert(pixelIndex);
+      }
+    },
+    centerMercator, kExploreRadiusMeters);
+
+  if (featureUpdates.empty())
+    return;
+
+  auto & db = street_stats::StreetStatsDB::Instance();
+  for (auto const & [fid, pixelIndices] : featureUpdates)
+  {
+    auto bitmask = db.GetBitmask(fid.m_mwmId, fid.m_index);
+    // If bitmask does not exist, it means the stats for this MWM have not been generated.
+    // We should not create it on the fly, as we don't know the full feature length.
+    if (!bitmask)
+      continue;
+
+    bool updated = false;
+    for (uint32_t pixelIndex : pixelIndices)
+    {
+      size_t const byteIndex = pixelIndex / 8;
+      if (byteIndex < bitmask->size())
+      {
+        uint8_t const bitIndex = pixelIndex % 8;
+        if (!((*bitmask)[byteIndex] & (1 << bitIndex)))
+        {
+          (*bitmask)[byteIndex] |= (1 << bitIndex);
+          updated = true;
+        }
+      }
+    }
+
+    if (updated)
+      db.SaveBitmask(fid.m_mwmId, fid.m_index, *bitmask);
   }
 }
 
