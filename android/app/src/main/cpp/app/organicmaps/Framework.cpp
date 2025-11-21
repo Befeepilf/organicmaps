@@ -18,6 +18,8 @@
 #include "map/bookmark_helpers.hpp"
 #include "map/chart_generator.hpp"
 #include "map/everywhere_search_params.hpp"
+#include "map/friends_manager.hpp"
+#include "map/identity_store.hpp"
 #include "map/user_mark.hpp"
 
 #include "storage/storage_defines.hpp"
@@ -122,6 +124,7 @@ Framework::Framework(std::function<void()> && afterMapsLoaded)
   m_work.GetTrafficManager().SetStateListener(bind(&Framework::TrafficStateChanged, this, _1));
   m_work.GetTransitManager().SetStateListener(bind(&Framework::TransitSchemeStateChanged, this, _1));
   m_work.GetIsolinesManager().SetStateListener(bind(&Framework::IsolinesSchemeStateChanged, this, _1));
+  m_work.GetStreetPixelsManager().SetStateListener(bind(&Framework::StreetPixelsStateChanged, this, _1, _2, _3));
   m_work.GetPowerManager().Subscribe(this);
 }
 
@@ -170,6 +173,13 @@ void Framework::IsolinesSchemeStateChanged(IsolinesManager::IsolinesState state)
 {
   if (m_onIsolinesStateChangedFn)
     m_onIsolinesStateChangedFn(state);
+}
+
+void Framework::StreetPixelsStateChanged(bool enabled, StreetPixelsManager::StreetPixelsStatus status,
+                                         storage::CountryId const & countryId)
+{
+  if (m_onStreetPixelsStateChangedFn)
+    m_onStreetPixelsStateChangedFn(enabled, status, countryId);
 }
 
 bool Framework::DestroySurfaceOnDetach()
@@ -665,6 +675,11 @@ void Framework::SetIsolinesListener(IsolinesManager::IsolinesStateChangedFn cons
   m_onIsolinesStateChangedFn = function;
 }
 
+void Framework::SetStreetPixelsListener(StreetPixelsManager::StreetPixelsStateChangedFn const & function)
+{
+  m_onStreetPixelsStateChangedFn = function;
+}
+
 bool Framework::IsTrafficEnabled()
 {
   return m_work.GetTrafficManager().IsEnabled();
@@ -830,6 +845,39 @@ Java_app_organicmaps_Framework_nativeGetAddress(JNIEnv * env, jclass clazz, jdou
   return jni::ToJavaString(env, info.FormatAddress());
 }
 
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeHasUsername(JNIEnv *, jclass)
+{
+  return static_cast<jboolean>(IdentityStore::HasUsername());
+}
+
+JNIEXPORT jstring JNICALL Java_app_organicmaps_Framework_nativeGetUsername(JNIEnv * env, jclass)
+{
+  auto const name = IdentityStore::GetUsername();
+  if (name.empty())
+    return nullptr;
+  return jni::ToJavaString(env, name);
+}
+
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeSetUsername(JNIEnv * env, jclass, jstring username)
+{
+  auto const name = jni::ToNativeString(env, username);
+  return static_cast<jboolean>(IdentityStore::SetUsername(name));
+}
+
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeGetExploreSharingEnabled(JNIEnv *, jclass)
+{
+  return static_cast<jboolean>(frm()->IsExploreSharingEnabled());
+}
+
+JNIEXPORT void JNICALL Java_app_organicmaps_Framework_nativeSetExploreSharingEnabled(JNIEnv *, jclass, jboolean enabled)
+{
+  frm()->EnableExploreSharing(static_cast<bool>(enabled));
+}
+
+JNIEXPORT void JNICALL Java_app_organicmaps_Framework_nativeTriggerExploreStatsUpload(JNIEnv *, jclass)
+{
+  frm()->TriggerExploreStatsUpload();
+}
 JNIEXPORT void JNICALL
 Java_app_organicmaps_Framework_nativeClearApiPoints(JNIEnv * env, jclass clazz)
 {
@@ -1592,6 +1640,19 @@ JNIEXPORT jboolean JNICALL
 Java_app_organicmaps_Framework_nativeIsOutdoorsLayerEnabled(JNIEnv * env, jclass)
 {
   return static_cast<jboolean>(frm()->LoadOutdoorsEnabled());
+}
+
+JNIEXPORT void JNICALL Java_app_organicmaps_Framework_nativeSetStreetPixelsLayerEnabled(JNIEnv * env, jclass,
+                                                                                        jboolean enabled)
+{
+  auto const streetPixelsEnabled = static_cast<bool>(enabled);
+  frm()->GetStreetPixelsManager().SetEnabled(streetPixelsEnabled);
+  frm()->SaveStreetPixelsEnabled(enabled);
+}
+
+JNIEXPORT jboolean JNICALL Java_app_organicmaps_Framework_nativeIsStreetPixelsLayerEnabled(JNIEnv * env, jclass)
+{
+  return static_cast<jboolean>(frm()->LoadStreetPixelsEnabled());
 }
 
 JNIEXPORT void JNICALL

@@ -387,6 +387,19 @@
     <!-- blue gray color -->
     <string name="blue_gray">Blue Gray</string>
 
+<!-- Exploration sharing settings -->
+<string name="pref_explore_sharing_title">Share exploration progress</string>
+<string name="pref_explore_username_title">Username</string>
+<string name="pref_explore_username_summary">Pick a username so friends can add you</string>
+<string name="pref_explore_username_hint">Allowed: a-z, 0-9, underscore; 3-20 chars</string>
+<string name="pref_explore_username_invalid">Invalid username. Use a-z, 0-9, underscore (3-20 chars).</string>
+<string name="my_account">My Account</string>
+<string name="friends_accepted">Friends</string>
+<string name="friends_incoming">Incoming requests</string>
+<string name="friends_outgoing">Outgoing requests</string>
+<string name="explore_stats">My Exploration</string>
+<string name="all_regions">All regions</string>
+
     <!-- SECTION: Routing dialogs strings -->
     <string name="dialog_routing_disclaimer_title">When following the route, please keep in mind:</string>
     <string name="dialog_routing_disclaimer_priority">— Road conditions, traffic laws, and road signs always take priority over navigation hints;</string>
@@ -424,6 +437,7 @@
     <string name="show">Show</string>
     <!-- «Hide» context menu -->
     <string name="hide">Hide</string>
+<string name="expand">Expand</string>
     <string name="categories">Categories</string>
     <string name="history">History</string>
     <string name="search_not_found">Oops, no results found.</string>
@@ -692,6 +706,7 @@
     <string name="terms_of_use">Terms of use</string>
     <string name="button_layer_traffic">Traffic</string>
     <string name="button_layer_subway">Subway</string>
+    <string name="button_layer_street_pixels">Street Pixels</string>
     <string name="layers_title">Map Styles and Layers</string>
     <string name="subway_data_unavailable">Subway map is unavailable</string>
     <string name="bookmarks_empty_list_title">This list is empty</string>
@@ -728,6 +743,11 @@
     <!-- Recommended length for CarPlay and Android Auto is around 25-27 characters -->
     <string name="avoid_ferry">Avoid ferries</string>
     <string name="avoid_motorways">Avoid freeways</string>
+<string name="routing_options_title">Routing Options</string>
+<string name="prefer_trails">Prefer trails</string>
+<string name="trail_preference">Trail preference</string>
+<string name="trail_preference_fastest">Fastest route</string>
+<string name="trail_preference_trails_only">Trails only</string>
     <string name="unable_to_calc_alert_title">Unable to calculate route</string>
     <string name="unable_to_calc_alert_subtitle">A route could not be found. This may be caused by your routing options or incomplete OpenStreetMap data. Please change your routing options and retry.</string>
     <string name="define_to_avoid_btn">Define roads to avoid</string>

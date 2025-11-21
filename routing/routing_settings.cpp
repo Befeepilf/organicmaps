@@ -96,5 +96,35 @@ RoutingSettings GetRoutingSettings(VehicleType vehicleType)
   }
   UNREACHABLE();
 }
+
+TrailRoutingSettings TrailRoutingSettings::LoadFromSettings()
+{
+  TrailRoutingSettings settings;
+
+  std::string preferTrailsStr;
+  if (!settings::Get("trail_routing_enabled", preferTrailsStr))
+    settings.m_preferTrails = false;
+  else
+    settings.m_preferTrails = (preferTrailsStr == "true");
+
+  std::string preferenceStr;
+  if (!settings::Get("trail_preference", preferenceStr))
+    settings.m_trailPreference = kDefaultTrailPreference;
+  else
+  {
+    double preference = kDefaultTrailPreference;
+    if (!strings::to_double(preferenceStr, preference))
+      preference = kDefaultTrailPreference;
+    settings.m_trailPreference = std::max(kMinTrailPreference, std::min(kMaxTrailPreference, preference));
+  }
+
+  return settings;
+}
+
+void TrailRoutingSettings::SaveToSettings(TrailRoutingSettings const & settings)
+{
+  settings::Set("trail_routing_enabled", settings.m_preferTrails);
+  settings::Set("trail_preference", settings.m_trailPreference);
+}
 }  // namespace routing
 

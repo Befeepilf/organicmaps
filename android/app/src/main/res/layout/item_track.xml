@@ -31,16 +31,16 @@
       android:singleLine="true"
       android:textAppearance="?fontBody1"
       tools:text="@string/tracks_title" />
-    <TextView
-      android:id="@+id/tv__bookmark_distance"
+<LinearLayout
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_marginEnd="@dimen/bookmark_collection_item_end_margin"
       android:layout_marginBottom="@dimen/margin_half_plus"
-      android:singleLine="true"
-      android:textColor="?android:textColorSecondary"
-      android:textAppearance="?fontBody2"
-      tools:text="@string/by_distance" />
+android:orientation="horizontal">
+<TextView android:id="@+id/tv__bookmark_distance" android:layout_width="wrap_content" android:layout_height="wrap_content"
+android:singleLine="true" android:textColor="?android:textColorSecondary" android:textAppearance="?fontBody2" tools:text="@string/by_distance" />
+<TextView android:id="@+id/tv__bookmark_explored" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/margin_base" android:textColor="@android:color/holo_green_dark" android:textAppearance="?fontBody2" tools:text="+23%" />
+</LinearLayout>
   </LinearLayout>
   <ImageView
     android:id="@+id/more"

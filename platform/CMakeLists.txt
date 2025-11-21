@@ -63,6 +63,8 @@ set(SRC
   string_storage_base.hpp
   utm_mgrs_utils.cpp
   utm_mgrs_utils.hpp
+  vibration.cpp
+  vibration.hpp
 )
 
 if (NOT SKIP_QT_GUI AND PLATFORM_DESKTOP AND PLATFORM_LINUX)

@@ -319,7 +319,7 @@ Java_app_organicmaps_bookmarks_data_BookmarkManager_nativeLoadBookmarks(JNIEnv *
   callbacks.m_onFinished = std::bind(&OnAsyncLoadingFinished, env);
   callbacks.m_onFileSuccess = std::bind(&OnAsyncLoadingFileSuccess, env, _1, _2);
   callbacks.m_onFileError = std::bind(&OnAsyncLoadingFileError, env, _1, _2);
-  frm()->GetBookmarkManager().SetAsyncLoadingCallbacks(std::move(callbacks));
+  frm()->GetBookmarkManager().AddAsyncLoadingCallbacks(std::move(callbacks));
 
   frm()->GetBookmarkManager().SetBookmarksChangedCallback(std::bind(&OnBookmarksChanged, env));
 
@@ -525,9 +525,9 @@ JNIEXPORT jobject JNICALL
 Java_app_organicmaps_bookmarks_data_BookmarkManager_nativeGetTrack(
       JNIEnv * env, jobject, jlong trackId, jclass trackClazz)
 {
-  // Track(long trackId, long categoryId, String name, String lengthString, int color)
-  static jmethodID const cId = jni::GetConstructorID(env, trackClazz,
-                                                     "(JJLjava/lang/String;Lapp/organicmaps/util/Distance;I)V");
+  // Track(long trackId, long categoryId, String name, Distance length, int color, double exploredFraction)
+  static jmethodID const cId =
+    jni::GetConstructorID(env, trackClazz, "(JJLjava/lang/String;Lapp/organicmaps/util/Distance;ID)V");
   auto const * nTrack = frm()->GetBookmarkManager().GetTrack(static_cast<kml::TrackId>(trackId));
 
   ASSERT(nTrack, ("Track must not be null with id:)", trackId));
@@ -539,9 +539,21 @@ Java_app_organicmaps_bookmarks_data_BookmarkManager_nativeGetTrack(
                       shift(nColor.GetGreen(), 8) +
                       nColor.GetBlue();
 
-  return env->NewObject(trackClazz, cId,
-                        trackId, static_cast<jlong>(nTrack->GetGroupId()), jni::ToJavaString(env, nTrack->GetName()),
-                        ToJavaDistance(env, platform::Distance::CreateFormatted(nTrack->GetLengthMeters())), androidColor);
+  // Read exploration fraction from KML properties.
+  double exploredFrac = 0.0;
+  try
+  {
+    auto const & props = nTrack->GetData().m_properties;
+    auto it = props.find("exploredFraction");
+    if (it != props.end())
+      exploredFrac = std::stod(it->second);
+  }
+  catch (...)
+  {}
+
+  return env->NewObject(
+    trackClazz, cId, trackId, static_cast<jlong>(nTrack->GetGroupId()), jni::ToJavaString(env, nTrack->GetName()),
+    ToJavaDistance(env, platform::Distance::CreateFormatted(nTrack->GetLengthMeters())), androidColor, exploredFrac);
 }
 
 JNIEXPORT jlong JNICALL

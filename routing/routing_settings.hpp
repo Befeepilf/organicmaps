@@ -63,5 +63,21 @@ public:
   double m_notSoCloseMaxDistMeters;
 };
 
+/// \brief Settings specific to pedestrian and bicycle routing with trail preferences
+struct TrailRoutingSettings
+{
+  /// \brief Trail preference from 0.0 (fastest route) to 100.0 (trails only)
+  double m_trailPreference = 50.0;
+
+  bool m_preferTrails = false;
+
+  static TrailRoutingSettings LoadFromSettings();
+  static void SaveToSettings(TrailRoutingSettings const & settings);
+
+  static constexpr double kMinTrailPreference = 0.0;
+  static constexpr double kMaxTrailPreference = 100.0;
+  static constexpr double kDefaultTrailPreference = 50.0;
+};
+
 RoutingSettings GetRoutingSettings(VehicleType vehicleType);
 }  // namespace routing

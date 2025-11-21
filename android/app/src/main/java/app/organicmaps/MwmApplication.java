@@ -29,6 +29,7 @@ import app.organicmaps.location.SensorHelper;
 import app.organicmaps.location.TrackRecorder;
 import app.organicmaps.location.TrackRecordingService;
 import app.organicmaps.maplayer.isolines.IsolinesManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.maplayer.subway.SubwayManager;
 import app.organicmaps.routing.NavigationService;
 import app.organicmaps.routing.RoutingController;
@@ -55,6 +56,10 @@ public class MwmApplication extends Application implements Application.ActivityL
   @SuppressWarnings("NotNullFieldNotInitialized")
   @NonNull
   private IsolinesManager mIsolinesManager;
+
+  @SuppressWarnings("NotNullFieldNotInitialized")
+  @NonNull
+  private StreetPixelsManager mStreetPixelsManager;
 
   @SuppressWarnings("NotNullFieldNotInitialized")
   @NonNull
@@ -88,6 +93,12 @@ public class MwmApplication extends Application implements Application.ActivityL
   public IsolinesManager getIsolinesManager()
   {
     return mIsolinesManager;
+  }
+
+  @NonNull
+  public StreetPixelsManager getStreetPixelsManager()
+  {
+    return mStreetPixelsManager;
   }
 
   @NonNull
@@ -152,6 +163,7 @@ public class MwmApplication extends Application implements Application.ActivityL
     registerActivityLifecycleCallbacks(this);
     mSubwayManager = new SubwayManager(this);
     mIsolinesManager = new IsolinesManager(this);
+    mStreetPixelsManager = new StreetPixelsManager(this);
     mLocationHelper = new LocationHelper(this);
     mSensorHelper = new SensorHelper(this);
     mDisplayManager = new DisplayManager();

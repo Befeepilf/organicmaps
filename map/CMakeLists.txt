@@ -14,6 +14,8 @@ set(SRC
   bookmarks_search_params.hpp
   chart_generator.cpp
   chart_generator.hpp
+  earth_chunk_manager.cpp
+  earth_chunk_manager.hpp
   elevation_info.cpp
   elevation_info.hpp
   everywhere_search_callback.cpp
@@ -55,12 +57,22 @@ set(SRC
   search_mark.cpp
   search_mark.hpp
   search_product_info.hpp
+  street_pixels_manager.cpp
+  street_pixels_manager.hpp
   track.cpp
   track.hpp
   track_statistics.cpp
   track_statistics.hpp
   track_mark.cpp
   track_mark.hpp
+  identity_store.cpp
+  identity_store.hpp
+  street_stats_db.cpp
+  street_stats_db.hpp
+  explore_stats_service.cpp
+  explore_stats_service.hpp
+  friends_manager.cpp
+  friends_manager.hpp
   traffic_manager.cpp
   traffic_manager.hpp
   transit/transit_display.cpp
@@ -96,6 +108,8 @@ target_link_libraries(${PROJECT_NAME}
   ge0
   drape_frontend
   agg
+  healpix
+  sqlite
 )
 
 omim_add_test_subdirectory(map_integration_tests)

@@ -50,6 +50,7 @@ import app.organicmaps.display.DisplayChangedListener;
 import app.organicmaps.display.DisplayManager;
 import app.organicmaps.display.DisplayType;
 import app.organicmaps.downloader.DownloaderActivity;
+import app.organicmaps.downloader.CountryItem;
 import app.organicmaps.downloader.DownloaderFragment;
 import app.organicmaps.downloader.MapManager;
 import app.organicmaps.downloader.OnmapDownloader;
@@ -76,6 +77,8 @@ import app.organicmaps.maplayer.MapButtonsViewModel;
 import app.organicmaps.maplayer.ToggleMapLayerFragment;
 import app.organicmaps.maplayer.isolines.IsolinesManager;
 import app.organicmaps.maplayer.isolines.IsolinesState;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsState;
 import app.organicmaps.routing.ManageRouteBottomSheet;
 import app.organicmaps.routing.NavigationController;
 import app.organicmaps.routing.NavigationService;
@@ -98,6 +101,8 @@ import app.organicmaps.settings.DrivingOptionsActivity;
 import app.organicmaps.settings.RoadType;
 import app.organicmaps.settings.SettingsActivity;
 import app.organicmaps.settings.UnitLocale;
+import app.organicmaps.settings.MyAccountDialogFragment;
+import app.organicmaps.stats.ExploreStatsDialogFragment;
 import app.organicmaps.util.Config;
 import app.organicmaps.util.LocationUtils;
 import app.organicmaps.util.PowerManagment;
@@ -1072,6 +1077,11 @@ public class MwmActivity extends BaseMwmFragmentActivity
         .show();
   }
 
+  private void onStreetPixelsStateChanged(@NonNull StreetPixelsState type)
+  {
+    mMapButtonsViewModel.setStreetPixelsState(type);
+  }
+
   @Override
   protected void onNewIntent(Intent intent)
   {
@@ -1152,6 +1162,7 @@ public class MwmActivity extends BaseMwmFragmentActivity
     BookmarkManager.INSTANCE.addLoadingListener(this);
     RoutingController.get().attach(this);
     IsolinesManager.from(getApplicationContext()).attach(this::onIsolinesStateChanged);
+    StreetPixelsManager.from(getApplicationContext()).attach(this::onStreetPixelsStateChanged);
     LocationState.nativeSetListener(this);
     LocationHelper.from(this).addListener(this);
     mSearchController.attach(this);
@@ -1171,8 +1182,11 @@ public class MwmActivity extends BaseMwmFragmentActivity
       RoutingController.get().detach();
     }
     IsolinesManager.from(getApplicationContext()).detach();
+    StreetPixelsManager.from(getApplicationContext()).detach();
     mSearchController.detach();
     Utils.keepScreenOn(false, getWindow());
+
+    MapManager.nativeUnsubscribeOnCountryChanged();
 
     final String backUrl = Framework.nativeGetParsedBackUrl();
     if (!TextUtils.isEmpty(backUrl))
@@ -2414,12 +2428,26 @@ public class MwmActivity extends BaseMwmFragmentActivity
       mDonatesUrl = Config.getDonateUrl(getApplicationContext());
       if (!TextUtils.isEmpty(mDonatesUrl))
         items.add(new MenuBottomSheetItem(R.string.donate, R.drawable.ic_donate, this::onDonateOptionSelected));
+      items.add(new MenuBottomSheetItem(R.string.my_account, R.drawable.ic_account, this::onMyAccountOptionSelected));
+      items.add(new MenuBottomSheetItem(R.string.explore_stats, R.drawable.ic_stats, this::onExploreStatsOptionSelected));
       items.add(new MenuBottomSheetItem(R.string.settings, R.drawable.ic_settings, this::onSettingsOptionSelected));
       items.add(new MenuBottomSheetItem(R.string.start_track_recording, R.drawable.ic_track_recording_off, -1, this::onTrackRecordingOptionSelected));
       items.add(new MenuBottomSheetItem(R.string.share_my_location, R.drawable.ic_share, this::onShareLocationOptionSelected));
       return items;
     }
     return null;
+  }
+
+  private void onMyAccountOptionSelected()
+  {
+    closeFloatingPanels();
+    MyAccountDialogFragment.show(getSupportFragmentManager());
+  }
+
+  private void onExploreStatsOptionSelected()
+  {
+    closeFloatingPanels();
+    ExploreStatsDialogFragment.show(getSupportFragmentManager());
   }
 
   @Override

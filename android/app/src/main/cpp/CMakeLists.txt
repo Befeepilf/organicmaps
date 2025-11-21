@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(organicmaps C CXX)
 
+find_package(OpenMP REQUIRED)
+
 set(SRC
   # JNI headers
   ../../../../../private.h
@@ -55,6 +57,7 @@ set(SRC
   app/organicmaps/settings/UnitLocale.cpp
   app/organicmaps/settings/MapLanguageCode.cpp
   app/organicmaps/sound/tts.cpp
+  app/organicmaps/streetpixels/StreetPixelsManager.cpp
   app/organicmaps/subway/SubwayManager.cpp
   app/organicmaps/TrackRecorder.cpp
   app/organicmaps/TrafficState.cpp
@@ -72,6 +75,7 @@ set(SRC
   app/organicmaps/platform/SecureStorage.cpp
   app/organicmaps/platform/SocketImpl.cpp
   app/organicmaps/util/Config.cpp
+  app/organicmaps/friends/FriendsManager.cpp
   app/organicmaps/util/GeoUtils.cpp
   app/organicmaps/util/HttpClient.cpp
   app/organicmaps/util/Language.cpp
@@ -79,12 +83,17 @@ set(SRC
   app/organicmaps/util/NetworkPolicy.cpp
   app/organicmaps/util/StringUtils.cpp
   app/organicmaps/util/UiThread.cpp
+  app/organicmaps/stats/ExploreStats.cpp
   app/organicmaps/vulkan/android_vulkan_context_factory.cpp
 )
 
 omim_add_library(${PROJECT_NAME} SHARED ${SRC})
 
 target_include_directories(${PROJECT_NAME} PRIVATE .)
+
+if(OpenMP_FOUND)
+  target_compile_options(${PROJECT_NAME} PRIVATE ${OpenMP_CXX_FLAGS})
+endif()
 
 target_link_libraries(${PROJECT_NAME}
   # Organic Maps libs
@@ -130,6 +139,9 @@ target_link_libraries(${PROJECT_NAME}
   GLESv2
   atomic
   z
+  # if(OpenMP_FOUND)
+  OpenMP::OpenMP_CXX
+  # endif()
 )
 
 #target_link_options(${PROJECT_NAME} PRIVATE "-fuse-ld=gold")

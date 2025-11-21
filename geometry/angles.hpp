@@ -14,8 +14,16 @@ class Angle
 {
 public:
   Angle() = default;
-  explicit Angle(T const & val) : m_val(val), m_sin(std::sin(val)), m_cos(std::cos(val)) {}
-  Angle(T const & sin, T const & cos) : m_val(std::atan2(sin, cos)), m_sin(sin), m_cos(cos) {}
+  explicit Angle(T const & val)
+    : m_val(val)
+    , m_sin(std::sin(val))
+    , m_cos(std::cos(val))
+  {}
+  Angle(T const & sin, T const & cos)
+    : m_val(std::atan2(sin, cos))
+    , m_sin(sin)
+    , m_cos(cos)
+  {}
 
   T const & val() const { return m_val; }
 
@@ -77,6 +85,7 @@ T TwoVectorsAngle(m2::Point<T> const & p, m2::Point<T> const & p1, m2::Point<T> 
 }
 
 double AngleIn2PI(double ang);
+double RadToDeg(double rad);
 
 /// @return Oriented angle (<= PI) from rad1 to rad2.
 /// >0 - clockwise, <0 - counterclockwise

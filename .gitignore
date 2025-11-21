@@ -140,6 +140,8 @@ android/firebase-app-distribution.json
 android/firebase-test-lab.json
 android/huawei-appgallery.json
 android/res/xml/network_security_config.xml
+android/app/fdroid/
+android/app/google/
 ./server/
 iphone/Maps/app.omaps/
 
@@ -190,3 +192,5 @@ screenshots/
 android/src/google/play/listings/
 keywords/
 iphone/metadata/**/keywords.txt
+
+ideas/

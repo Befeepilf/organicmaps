@@ -1,3 +1,4 @@
+*.jks
 /build
 /nativeOutputs
 

@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import app.organicmaps.R;
 import app.organicmaps.maplayer.isolines.IsolinesManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsManager;
+import app.organicmaps.maplayer.streetpixels.StreetPixelsState;
 import app.organicmaps.util.SharedPropertiesUtils;
 import app.organicmaps.util.Utils;
 import app.organicmaps.util.bottomsheet.MenuBottomSheetFragment;
@@ -22,7 +24,7 @@ import com.google.android.material.button.MaterialButton;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ToggleMapLayerFragment extends Fragment
+public class ToggleMapLayerFragment extends Fragment implements StreetPixelsManager.Callback
 {
   private static final String LAYERS_MENU_ID = "LAYERS_MENU_BOTTOM_SHEET";
   @Nullable
@@ -84,5 +86,28 @@ public class ToggleMapLayerFragment extends Fragment
         (MenuBottomSheetFragment) requireActivity().getSupportFragmentManager().findFragmentByTag(LAYERS_MENU_ID);
     if (bottomSheet != null)
       bottomSheet.dismiss();
+  }
+
+  @Override
+  public void onStateChanged(boolean enabled, @NonNull StreetPixelsState.Status status, @NonNull String countryId)
+  {
+    if (mAdapter != null)
+      mAdapter.notifyDataSetChanged();
+  }
+
+  @Override
+  public void onStart()
+  {
+    super.onStart();
+    StreetPixelsManager.registerCallback(this);
+    if (mAdapter != null)
+      mAdapter.notifyDataSetChanged();
+  }
+
+  @Override
+  public void onStop()
+  {
+    StreetPixelsManager.unregisterCallback(this);
+    super.onStop();
   }
 }
