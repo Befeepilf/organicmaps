@@ -14,6 +14,7 @@ public class LayersUtils
     availableLayers.add(Mode.HIKING);
     availableLayers.add(Mode.CYCLING);
     availableLayers.add(Mode.SUBWAY);
+    availableLayers.add(Mode.STREET_PIXELS);
     return availableLayers;
   }
 }

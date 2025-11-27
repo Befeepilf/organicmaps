@@ -323,6 +323,8 @@ public:
   /// \brief Returns root country id of the country tree.
   CountryId const GetRootId() const;
 
+  CountryTree::Node const & GetRootNode() const;
+
   /// \param childIds is filled with children node ids by a parent. For example GetChildren(GetRootId())
   /// returns in param all countries ids. It's content of map downloader list by default.
   void GetChildren(CountryId const & parent, CountriesVec & childIds) const;
@@ -501,6 +503,8 @@ public:
 
   // Returns list of all local maps, including fake countries (World*.mwm).
   void GetLocalMaps(std::vector<LocalFilePtr> & maps) const;
+
+  std::map<storage::CountryId, storage::LocalFilePtr> GetRealLocalMaps() const;
 
   // Returns number of downloaded maps (files), excluding fake countries (World*.mwm).
   size_t GetDownloadedFilesCount() const;

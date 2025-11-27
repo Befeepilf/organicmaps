@@ -297,6 +297,9 @@ public class Framework
   public static native void nativeSetCyclingLayerEnabled(boolean enabled);
   public static native boolean nativeIsCyclingLayerEnabled();
 
+  public static native void nativeSetStreetPixelsLayerEnabled(boolean enabled);
+  public static native boolean nativeIsStreetPixelsLayerEnabled();
+
   public static native boolean nativeNeedUpdateForRoutes();
 
   @NonNull
@@ -367,4 +370,12 @@ public class Framework
   public static native void nativeDidSelectProduct(String title, String link);
 
   public static native void nativeSaveRoute();
+
+  @Nullable
+  public static native String nativeGetUsername();
+  public static native boolean nativeHasUsername();
+  public static native boolean nativeSetUsername(@NonNull String username);
+  public static native boolean nativeGetExploreSharingEnabled();
+  public static native void nativeSetExploreSharingEnabled(boolean enabled);
+  public static native void nativeTriggerExploreStatsUpload();
 }

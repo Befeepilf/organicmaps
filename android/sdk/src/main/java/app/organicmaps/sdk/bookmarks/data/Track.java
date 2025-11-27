@@ -15,6 +15,7 @@ public final class Track extends MapObject
   private long mCategoryId;
   @ColorInt
   private int mColor;
+  private double mExploredFraction;
   @Nullable
   private ElevationInfo mElevationInfo;
   @Nullable
@@ -32,6 +33,21 @@ public final class Track extends MapObject
     mName = name;
     mLength = length;
     mColor = color;
+    mExploredFraction = 0.0;
+  }
+
+  @Keep
+  @SuppressWarnings("unused")
+  private Track(long id, long categoryId, String name, Distance length, int color, double exploredFraction)
+  {
+    super(TRACK, name, "", "", "", 0, 0, "", null, OPENING_MODE_PREVIEW_PLUS, "", "",
+          RoadWarningMarkType.UNKNOWN.ordinal(), null);
+    mId = id;
+    mCategoryId = categoryId;
+    mName = name;
+    mLength = length;
+    mColor = color;
+    mExploredFraction = exploredFraction;
   }
 
   // Called from JNI.
@@ -92,6 +108,11 @@ public final class Track extends MapObject
   public long getCategoryId()
   {
     return mCategoryId;
+  }
+
+  public double getExploredFraction()
+  {
+    return mExploredFraction;
   }
 
   @NonNull

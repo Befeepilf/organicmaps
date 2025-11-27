@@ -5,6 +5,7 @@
 #include "app/organicmaps/sdk/routing/LaneInfo.hpp"
 #include "app/organicmaps/sdk/routing/PedestrianDirection.hpp"
 #include "app/organicmaps/sdk/routing/roadshield/RoadShieldInfo.hpp"
+#include "app/organicmaps/sdk/util/Distance.hpp"
 
 #include "map/routing_manager.hpp"
 

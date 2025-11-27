@@ -5,6 +5,7 @@
 #include "std/target_os.hpp"
 
 #include <cstring>
+#include <span>
 
 #ifdef OMIM_OS_WINDOWS
 #include "std/windows.hpp"
@@ -18,7 +19,7 @@
 class MmapReader::MmapData
 {
 public:
-  explicit MmapData(std::string const & fileName, Advice advice)
+  explicit MmapData(std::string const & fileName, Advice advice, bool writable)
   {
 #ifdef OMIM_OS_WINDOWS
     m_hFile = CreateFileA(fileName.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -47,7 +48,8 @@ public:
     mappingGuard.release();
     fileGuard.release();
 #else
-    m_fd = open(fileName.c_str(), O_RDONLY | O_NONBLOCK);
+    int const openFlags = (writable ? O_RDWR : O_RDONLY) | O_NONBLOCK;
+    m_fd = open(fileName.c_str(), openFlags);
     if (m_fd == -1)
       MYTHROW(OpenException, ("open failed for file", fileName));
 
@@ -56,11 +58,21 @@ public:
       MYTHROW(OpenException, ("fstat failed for file", fileName));
     m_size = s.st_size;
 
+    if (writable)
+    {
+      m_memory =
+        static_cast<uint8_t *>(mmap(0, static_cast<size_t>(m_size), PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, 0));
+    }
+    else
+    {
+      m_memory = static_cast<uint8_t *>(mmap(0, static_cast<size_t>(m_size), PROT_READ, MAP_PRIVATE, m_fd, 0));
+    }
+
     m_memory = static_cast<uint8_t *>(mmap(0, static_cast<size_t>(m_size), PROT_READ, MAP_PRIVATE, m_fd, 0));
     if (m_memory == MAP_FAILED)
     {
       close(m_fd);
-      MYTHROW(OpenException, ("mmap failed for file", fileName));
+      MYTHROW(OpenException, ("mmap failed for file", fileName, ", errno:", strerror(errno)));
     }
 
     int adv = MADV_NORMAL;
@@ -101,9 +113,9 @@ private:
 #endif
 };
 
-MmapReader::MmapReader(std::string const & fileName, Advice advice)
+MmapReader::MmapReader(std::string const & fileName, Advice advice, bool writable)
   : base_type(fileName)
-  , m_data(std::make_shared<MmapData>(fileName, advice))
+  , m_data(std::make_shared<MmapData>(fileName, advice, writable))
   , m_offset(0)
   , m_size(m_data->m_size)
 {}

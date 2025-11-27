@@ -2,6 +2,7 @@
 #include "app/organicmaps/sdk/Framework.hpp"
 #include "app/organicmaps/sdk/core/jni_helper.hpp"
 #include "routing/routing_options.hpp"
+#include "routing/routing_settings.hpp"
 
 routing::RoutingOptions::Road makeValue(jint option)
 {

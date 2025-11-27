@@ -310,6 +310,7 @@ def allowedPermissions = [
     "name='android.permission.FOREGROUND_SERVICE_DATA_SYNC'",
     // notifications
     "name='android.permission.POST_NOTIFICATIONS'",
+    "name='android.permission.VIBRATE'",
     // wake lock
     "name='android.permission.WAKE_LOCK'",
     // Android Auto

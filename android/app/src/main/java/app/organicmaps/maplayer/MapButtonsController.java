@@ -22,11 +22,15 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import app.organicmaps.MwmActivity;
 import app.organicmaps.R;
+import app.organicmaps.MwmApplication;
 import app.organicmaps.sdk.Framework;
+import app.organicmaps.sdk.downloader.CountryItem;
 import app.organicmaps.sdk.downloader.MapManager;
 import app.organicmaps.sdk.downloader.UpdateInfo;
 import app.organicmaps.sdk.location.TrackRecorder;
 import app.organicmaps.sdk.maplayer.isolines.IsolinesManager;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsManager;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsState;
 import app.organicmaps.sdk.maplayer.subway.SubwayManager;
 import app.organicmaps.sdk.maplayer.traffic.TrafficManager;
 import app.organicmaps.sdk.routing.RoutingController;
@@ -40,6 +44,7 @@ import app.organicmaps.widget.placepage.PlacePageViewModel;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.badge.BadgeUtils;
 import com.google.android.material.badge.ExperimentalBadgeUtils;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +61,8 @@ public class MapButtonsController extends Fragment
   private LayersButton mToggleMapLayerButton;
   @Nullable
   FloatingActionButton mTrackRecordingStatusButton;
+  @Nullable
+  private ExtendedFloatingActionButton mExplorationBadge;
 
   @Nullable
   private MyPositionButton mNavMyPosition;
@@ -77,6 +84,7 @@ public class MapButtonsController extends Fragment
     updateMenuBadge(enable);
     showButton(enable, MapButtons.trackRecordingStatus);
   };
+  private final Observer<StreetPixelsState> mStreetPixelsStateObserver = this::updateExplorationBadge;
   private final Observer<Integer> mTopButtonMarginObserver = this::updateTopButtonsMargin;
 
   @Nullable
@@ -132,10 +140,14 @@ public class MapButtonsController extends Fragment
       mToggleMapLayerButton.setVisibility(View.VISIBLE);
     }
     mMapButtonsViewModel.setTopButtonsMarginTop(-1);
+
     mTrackRecordingStatusButton = mFrame.findViewById(R.id.track_recording_status);
     if (mTrackRecordingStatusButton != null)
       mTrackRecordingStatusButton.setOnClickListener(
           view -> mMapButtonClickListener.onMapButtonClick(MapButtons.trackRecordingStatus));
+
+    mExplorationBadge = mFrame.findViewById(R.id.exploration_percentage);
+
     final View menuButton = mFrame.findViewById(R.id.menu_button);
     if (menuButton != null)
     {
@@ -289,8 +301,36 @@ public class MapButtonsController extends Fragment
       return;
     final boolean buttonSelected = TrafficManager.INSTANCE.isEnabled() || IsolinesManager.isEnabled()
                                 || SubwayManager.isEnabled() || Framework.nativeIsOutdoorsLayerEnabled()
+                                || StreetPixelsManager.isEnabled()
                                 || Framework.nativeIsHikingLayerEnabled() || Framework.nativeIsCyclingLayerEnabled();
     mToggleMapLayerButton.setHasActiveLayers(buttonSelected);
+  }
+
+  private void updateExplorationBadge(@Nullable StreetPixelsState state)
+  {
+    if (mExplorationBadge == null)
+      return;
+    Context ctx = getContext();
+    if (ctx == null)
+      return;
+
+    if (state == null || state.getStatus() == StreetPixelsState.Status.NOT_READY) {
+      UiUtils.showIf(false, mExplorationBadge);
+      return;
+    }
+
+    if (state.getStatus() == StreetPixelsState.Status.LOADING) {
+      mExplorationBadge.setText("Loading exploration progress...");
+    } else {
+      double frac = MwmApplication.from(ctx).getStreetPixelsManager().getTotalExploredFraction();
+      double percent = Math.round(frac * 100 * 10) / 10.0;
+      String countryId = state.getCountryId();
+      CountryItem country = (TextUtils.isEmpty(countryId) ? null : CountryItem.fill(countryId));
+      String countryName = country != null ? country.name : "Unknown";
+      mExplorationBadge.setText(countryName + " • " + percent + "%");
+    }
+
+    UiUtils.showIf(true, mExplorationBadge);
   }
 
   private boolean isBehindPlacePage(View v)
@@ -402,6 +442,7 @@ public class MapButtonsController extends Fragment
     mMapButtonsViewModel.getMyPositionMode().observe(activity, mMyPositionModeObserver);
     mMapButtonsViewModel.getSearchOption().observe(activity, mSearchOptionObserver);
     mMapButtonsViewModel.getTrackRecorderState().observe(activity, mTrackRecorderObserver);
+    mMapButtonsViewModel.getStreetPixelsState().observe(activity, mStreetPixelsStateObserver);
     mMapButtonsViewModel.getTopButtonsMarginTop().observe(activity, mTopButtonMarginObserver);
   }
 
@@ -411,6 +452,10 @@ public class MapButtonsController extends Fragment
     mSearchWheel.onResume();
     updateMenuBadge();
     updateLayerButton();
+
+    @Nullable StreetPixelsState state = mMapButtonsViewModel.getStreetPixelsState().getValue();
+    updateExplorationBadge(state);
+
     final WindowInsetUtils.PaddingInsetsListener insetsListener =
         new WindowInsetUtils.PaddingInsetsListener.Builder()
             .setInsetsTypeMask(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout())
@@ -438,6 +483,7 @@ public class MapButtonsController extends Fragment
     mMapButtonsViewModel.getButtonsHidden().removeObserver(mButtonHiddenObserver);
     mMapButtonsViewModel.getMyPositionMode().removeObserver(mMyPositionModeObserver);
     mMapButtonsViewModel.getSearchOption().removeObserver(mSearchOptionObserver);
+    mMapButtonsViewModel.getStreetPixelsState().removeObserver(mStreetPixelsStateObserver);
   }
 
   public void onSearchOptionChange(@Nullable SearchWheel.SearchOption searchOption)

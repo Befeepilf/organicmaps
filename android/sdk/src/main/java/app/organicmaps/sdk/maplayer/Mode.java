@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import app.organicmaps.sdk.Framework;
 import app.organicmaps.sdk.R;
 import app.organicmaps.sdk.maplayer.isolines.IsolinesManager;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.sdk.maplayer.subway.SubwayManager;
 import app.organicmaps.sdk.maplayer.traffic.TrafficManager;
 
@@ -99,11 +100,36 @@ public enum Mode
       if (isEnabled)
         showUpdateToastIfNeeded(context);
     }
+  },
+
+  STREET_PIXELS {
+    @Override
+    public boolean isEnabled(@NonNull Context context)
+    {
+      return StreetPixelsManager.isEnabled();
+    }
+
+    @Override
+    public void setEnabled(@NonNull Context context, boolean isEnabled)
+    {
+      StreetPixelsManager.setEnabled(isEnabled);
+    }
+
+    @Override
+    public boolean isLoading(@NonNull Context context)
+    {
+      return StreetPixelsManager.isLoading();
+    }
   };
 
   public abstract boolean isEnabled(@NonNull Context context);
 
   public abstract void setEnabled(@NonNull Context context, boolean isEnabled);
+
+  public boolean isLoading(@NonNull Context context)
+  {
+    return false;
+  }
 
   public void showUpdateToastIfNeeded(@NonNull Context context)
   {

@@ -14,6 +14,7 @@ double GetMinDistanceMeters(FeatureType & ft, m2::PointD const & pt, int scale);
 double GetMinDistanceMeters(FeatureType & ft, m2::PointD const & pt);
 
 double CalcArea(FeatureType & ft);
+double CalcLengthMeters(FeatureType & ft);
 
 template <class Iter>
 void CalcRect(Iter b, Iter e, m2::RectD & rect)

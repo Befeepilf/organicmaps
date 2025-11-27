@@ -28,6 +28,7 @@ import app.organicmaps.sdk.location.LocationState;
 import app.organicmaps.sdk.location.SensorHelper;
 import app.organicmaps.sdk.location.TrackRecorder;
 import app.organicmaps.sdk.maplayer.isolines.IsolinesManager;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.sdk.maplayer.subway.SubwayManager;
 import app.organicmaps.sdk.routing.RoutingController;
 import app.organicmaps.sdk.util.Config;
@@ -78,6 +79,12 @@ public class MwmApplication extends Application implements Application.ActivityL
   public IsolinesManager getIsolinesManager()
   {
     return getOrganicMaps().getIsolinesManager();
+  }
+
+  @NonNull
+  public StreetPixelsManager getStreetPixelsManager()
+  {
+    return getOrganicMaps().getStreetPixelsManager();
   }
 
   @NonNull

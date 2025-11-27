@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import app.organicmaps.sdk.location.TrackRecorder;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsState;
 
 public class MapButtonsViewModel extends ViewModel
 {
@@ -16,6 +17,7 @@ public class MapButtonsViewModel extends ViewModel
   private final MutableLiveData<SearchWheel.SearchOption> mSearchOption = new MutableLiveData<>();
   private final MutableLiveData<Boolean> mTrackRecorderState =
       new MutableLiveData<>(TrackRecorder.nativeIsTrackRecordingEnabled());
+  private final MutableLiveData<StreetPixelsState> mStreetPixelsState = new MutableLiveData<>();
 
   public MutableLiveData<Boolean> getButtonsHidden()
   {
@@ -85,5 +87,15 @@ public class MapButtonsViewModel extends ViewModel
   public MutableLiveData<Boolean> getTrackRecorderState()
   {
     return mTrackRecorderState;
+  }
+
+  public void setStreetPixelsState(StreetPixelsState state)
+  {
+    mStreetPixelsState.setValue(state);
+  }
+
+  public MutableLiveData<StreetPixelsState> getStreetPixelsState()
+  {
+    return mStreetPixelsState;
   }
 }

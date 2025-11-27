@@ -176,7 +176,7 @@ public:
 
   void SetBookmarksChangedCallback(BookmarksChangedCallback && callback);
   void SetCategoriesChangedCallback(CategoriesChangedCallback && callback);
-  void SetAsyncLoadingCallbacks(AsyncLoadingCallbacks && callbacks);
+  void AddAsyncLoadingCallbacks(AsyncLoadingCallbacks && callbacks);
   bool IsAsyncLoadingInProgress() const { return m_asyncLoadingInProgress; }
 
   bool AreSymbolSizesAcquired(OnSymbolSizesAcquiredCallback && callback);
@@ -210,6 +210,10 @@ public:
   UserMark const * GetUserMark(kml::MarkId markId) const;
   Bookmark const * GetBookmark(kml::MarkId markId) const;
   Track const * GetTrack(kml::TrackId trackId) const;
+
+  TracksCollection::const_iterator GetTracks() const;
+  void ForEachTrack(std::function<void(Track const &)> const & fn) const;
+  void ForEachTrackSortedByTimestamp(std::function<void(Track const &)> const & fn) const;
 
   kml::MarkIdSet const & GetUserMarkIds(kml::MarkGroupId groupId) const;
   kml::TrackIdSet const & GetTrackIds(kml::MarkGroupId groupId) const;
@@ -739,7 +743,7 @@ private:
   OnSymbolSizesAcquiredCallback m_onSymbolSizesAcquiredFn;
   bool m_symbolSizesAcquired = false;
 
-  AsyncLoadingCallbacks m_asyncLoadingCallbacks;
+  std::vector<AsyncLoadingCallbacks> m_asyncLoadingCallbacks;
   std::atomic<bool> m_needTeardown;
   size_t m_openedEditSessionsCount = 0;
   bool m_loadBookmarksCalled = false;

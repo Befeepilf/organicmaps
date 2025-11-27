@@ -116,4 +116,16 @@ double CalcArea(FeatureType & ft)
   }
   return area;
 }
+
+double CalcLengthMeters(FeatureType & ft)
+{
+  double lengthMeters = 0;
+  ft.ParseGeometry(FeatureType::BEST_GEOMETRY);
+  size_t const count = ft.GetPointsCount();
+  for (size_t i = 1; i < count; ++i)
+  {
+    lengthMeters += mercator::DistanceOnEarth(ft.GetPoint(i - 1), ft.GetPoint(i));
+  }
+  return lengthMeters;
+}
 }  // namespace feature

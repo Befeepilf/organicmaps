@@ -12,6 +12,7 @@
 
 #include "platform/settings.hpp"
 
+#include <span>
 #include <unordered_map>
 
 namespace df
@@ -649,6 +650,28 @@ void DrapeEngine::ClearGpsTrackPoints()
 {
   m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<ClearGpsTrackPointsMessage>(),
                                   MessagePriority::Normal);
+}
+
+void DrapeEngine::EnableStreetPixels(bool enable)
+{
+  m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<EnableStreetPixelsMessage>(enable),
+                                  MessagePriority::Normal);
+}
+
+void DrapeEngine::UpdateStreetPixels(std::span<df::StreetPixel> & toAdd)
+{
+  m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<UpdateStreetPixelsMessage>(toAdd),
+                                  MessagePriority::Normal);
+}
+
+void DrapeEngine::ClearStreetPixels()
+{
+  {
+    BaseBlockingMessage::Blocker blocker;
+    m_threadCommutator->PostMessage(ThreadsCommutator::RenderThread, make_unique_dp<ClearStreetPixelsMessage>(blocker),
+                                    MessagePriority::Normal);
+    blocker.Wait();
+  }
 }
 
 void DrapeEngine::EnableChoosePositionMode(bool enable, std::vector<m2::TriangleD> && boundAreaTriangles,

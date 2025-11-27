@@ -174,6 +174,10 @@ set(SRC
   selection_shape_generator.cpp
   selection_shape_generator.hpp
   shape_view_params.hpp
+  street_pixel.cpp
+  street_pixel.hpp
+  street_pixel_renderer.cpp
+  street_pixel_renderer.hpp
   stylist.cpp
   stylist.hpp
   text_handle.cpp
@@ -219,6 +223,7 @@ target_link_libraries(${PROJECT_NAME}
     editor
     drape
     indexer
+    map
     traffic
     transit
     shaders

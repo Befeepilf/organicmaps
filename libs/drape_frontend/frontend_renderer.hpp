@@ -13,6 +13,7 @@
 #include "drape_frontend/render_state_extension.hpp"
 #include "drape_frontend/requested_tiles.hpp"
 #include "drape_frontend/route_renderer.hpp"
+#include "drape_frontend/street_pixel_renderer.hpp"
 #include "drape_frontend/threads_commutator.hpp"
 #include "drape_frontend/tile_background_renderer.hpp"
 #include "drape_frontend/traffic_renderer.hpp"
@@ -330,6 +331,7 @@ private:
   drape_ptr<dp::Framebuffer> m_buildingsFramebuffer;
   drape_ptr<ScreenQuadRenderer> m_screenQuadRenderer;
   drape_ptr<GpsTrackRenderer> m_gpsTrackRenderer;
+  drape_ptr<StreetPixelRenderer> m_streetPixelRenderer;
   drape_ptr<DrapeApiRenderer> m_drapeApiRenderer;
 
   drape_ptr<dp::OverlayTree> m_overlayTree;
