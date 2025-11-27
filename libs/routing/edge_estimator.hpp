@@ -83,4 +83,7 @@ double GetPedestrianClimbPenalty(EdgeEstimator::Purpose purpose, double tangent,
 double GetBicycleClimbPenalty(EdgeEstimator::Purpose purpose, double tangent, geometry::Altitude altitudeM);
 double GetCarClimbPenalty(EdgeEstimator::Purpose purpose, double tangent, geometry::Altitude altitudeM);
 
+double GetTrailWeightMultiplier(RoadGeometry const & road, double trailPreference, double trailMultiplier,
+  double penaltyMultiplier, std::initializer_list<std::pair<HighwayType, double>> fallbackReductions = {});
+
 }  // namespace routing

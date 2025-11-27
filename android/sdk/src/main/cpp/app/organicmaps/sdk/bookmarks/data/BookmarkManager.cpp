@@ -284,7 +284,7 @@ JNIEXPORT void JNICALL Java_app_organicmaps_sdk_bookmarks_data_BookmarkManager_n
   callbacks.m_onFinished = std::bind(&OnAsyncLoadingFinished, env);
   callbacks.m_onFileSuccess = std::bind(&OnAsyncLoadingFileSuccess, env, _1, _2);
   callbacks.m_onFileError = std::bind(&OnAsyncLoadingFileError, env, _1, _2);
-  frm()->GetBookmarkManager().SetAsyncLoadingCallbacks(std::move(callbacks));
+  frm()->GetBookmarkManager().AddAsyncLoadingCallbacks(std::move(callbacks));
 
   frm()->GetBookmarkManager().SetBookmarksChangedCallback(std::bind(&OnBookmarksChanged, env));
 
@@ -487,17 +487,30 @@ JNIEXPORT jobject JNICALL Java_app_organicmaps_sdk_bookmarks_data_BookmarkManage
                                                                                                  jlong trackId,
                                                                                                  jclass trackClazz)
 {
-  // Track(long trackId, long categoryId, String name, String lengthString, int color)
+  // Track(long trackId, long categoryId, String name, String lengthString, int color, double exploredFraction)
   static jmethodID const cId =
-      jni::GetConstructorID(env, trackClazz, "(JJLjava/lang/String;Lapp/organicmaps/sdk/util/Distance;I)V");
+      jni::GetConstructorID(env, trackClazz, "(JJLjava/lang/String;Lapp/organicmaps/sdk/util/Distance;ID)V");
   auto const * nTrack = frm()->GetBookmarkManager().GetTrack(static_cast<kml::TrackId>(trackId));
 
   ASSERT(nTrack, ("Track must not be null with id:)", trackId));
 
+  // Read exploration fraction from KML properties.
+  double exploredFrac = 0.0;
+  try
+  {
+    auto const & props = nTrack->GetData().m_properties;
+    auto it = props.find("exploredFraction");
+    if (it != props.end())
+      exploredFrac = std::stod(it->second);
+  }
+  catch (...)
+  {}
+
   return env->NewObject(trackClazz, cId, trackId, static_cast<jlong>(nTrack->GetGroupId()),
                         jni::ToJavaString(env, nTrack->GetName()),
                         ToJavaDistance(env, platform::Distance::CreateFormatted(nTrack->GetLengthMeters())),
-                        nTrack->GetColor(0).GetARGB());
+                        nTrack->GetColor(0).GetARGB(),
+                        exploredFrac);
 }
 
 JNIEXPORT jlong JNICALL Java_app_organicmaps_sdk_bookmarks_data_BookmarkManager_nativeGetTrackIdByPosition(

@@ -1,0 +1,7 @@
+- Implement trail options UI:
+    - Change current DrivingOptions UI to be dynamic based on routing mode
+    - Relevant files: RoutingPlanController.java, DrivingOptionsActivity.java, DrivingOptionsFragment.java, fragment_driving_options.xml, routing_plan.xml
+- StreetPixelsManager uses mixture of static methods, and being a singleton managed by OrganicMaps class
+    -> Refactor to not use static methods?
+- Make track explored fraction display real numbers, current placeholder: "+23%"
+    - Relevant file: item_track.xml

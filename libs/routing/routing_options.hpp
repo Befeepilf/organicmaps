@@ -42,6 +42,22 @@ private:
   RoadType m_options = 0;
 };
 
+/// \brief Options specific to pedestrian and bicycle routing with trail preferences
+struct TrailRoutingOptions
+{
+  /// \brief Trail preference from 0.0 (fastest route) to 100.0 (trails only)
+  double m_trailPreference = 50.0;
+
+  bool m_preferTrails = false;
+
+  static TrailRoutingOptions LoadFromSettings();
+  static void SaveToSettings(TrailRoutingOptions const & settings);
+
+  static constexpr double kMinTrailPreference = 0.0;
+  static constexpr double kMaxTrailPreference = 100.0;
+  static constexpr double kDefaultTrailPreference = 50.0;
+};
+
 class RoutingOptionsClassifier
 {
 public:

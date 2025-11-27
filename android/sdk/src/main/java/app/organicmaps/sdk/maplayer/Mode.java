@@ -4,6 +4,7 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import app.organicmaps.sdk.Framework;
 import app.organicmaps.sdk.maplayer.isolines.IsolinesManager;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.sdk.maplayer.subway.SubwayManager;
 import app.organicmaps.sdk.maplayer.traffic.TrafficManager;
 
@@ -63,9 +64,34 @@ public enum Mode
       // TODO: ThemeSwitcher is outside sdk package. Properly fix dependencies
       // ThemeSwitcher.INSTANCE.restart(true);
     }
+  },
+
+  STREET_PIXELS {
+    @Override
+    public boolean isEnabled(@NonNull Context context)
+    {
+      return StreetPixelsManager.isEnabled();
+    }
+
+    @Override
+    public void setEnabled(@NonNull Context context, boolean isEnabled)
+    {
+      StreetPixelsManager.setEnabled(isEnabled);
+    }
+
+    @Override
+    public boolean isLoading(@NonNull Context context)
+    {
+      return StreetPixelsManager.isLoading();
+    }
   };
 
   public abstract boolean isEnabled(@NonNull Context context);
 
   public abstract void setEnabled(@NonNull Context context, boolean isEnabled);
+
+  public boolean isLoading(@NonNull Context context)
+  {
+    return false;
+  }
 }

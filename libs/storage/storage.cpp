@@ -335,6 +335,17 @@ void Storage::GetLocalMaps(vector<LocalFilePtr> & maps) const
   maps.erase(unique(maps.begin(), maps.end()), maps.end());
 }
 
+std::map<storage::CountryId, storage::LocalFilePtr> Storage::GetRealLocalMaps() const
+{
+  std::map<storage::CountryId, storage::LocalFilePtr> result;
+  for (auto const & [countryId, files] : m_localFiles)
+  {
+    if (!files.empty())
+      result[countryId] = files.front();
+  }
+  return result;
+}
+
 size_t Storage::GetDownloadedFilesCount() const
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());
@@ -1117,6 +1128,11 @@ void Storage::ApplyCountries(std::string const & countriesBuffer, Storage & stor
   // LoadDiffScheme();
 
   /// @todo Start World and WorldCoasts download ?!
+}
+
+CountryTree::Node const & Storage::GetRootNode() const
+{
+  return m_countries.GetRoot();
 }
 
 CountryId const Storage::GetRootId() const

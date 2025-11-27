@@ -53,6 +53,38 @@ bool RoutingOptions::Has(RoutingOptions::Road type) const
   return (m_options & static_cast<RoadType>(type)) != 0;
 }
 
+// TrailRoutingOptions -------------------------------------------------------------------------------------
+
+TrailRoutingOptions TrailRoutingOptions::LoadFromSettings()
+{
+  TrailRoutingOptions settings;
+
+  std::string preferTrailsStr;
+  if (!settings::Get("trail_routing_enabled", preferTrailsStr))
+    settings.m_preferTrails = false;
+  else
+    settings.m_preferTrails = (preferTrailsStr == "true");
+
+  std::string preferenceStr;
+  if (!settings::Get("trail_preference", preferenceStr))
+    settings.m_trailPreference = kDefaultTrailPreference;
+  else
+  {
+    double preference = kDefaultTrailPreference;
+    if (!strings::to_double(preferenceStr, preference))
+      preference = kDefaultTrailPreference;
+    settings.m_trailPreference = std::max(kMinTrailPreference, std::min(kMaxTrailPreference, preference));
+  }
+
+  return settings;
+}
+
+void TrailRoutingOptions::SaveToSettings(TrailRoutingOptions const & settings)
+{
+  settings::Set("trail_routing_enabled", settings.m_preferTrails);
+  settings::Set("trail_preference", settings.m_trailPreference);
+}
+
 // RoutingOptionsClassifier ---------------------------------------------------------------------------
 
 RoutingOptionsClassifier::RoutingOptionsClassifier()

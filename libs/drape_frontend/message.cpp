@@ -61,6 +61,9 @@ std::string DebugPrint(Message::Type msgType)
   case Message::Type::CacheCirclesPack: return "CacheCirclesPack";
   case Message::Type::UpdateGpsTrackPoints: return "UpdateGpsTrackPoints";
   case Message::Type::ClearGpsTrackPoints: return "ClearGpsTrackPoints";
+  case Message::Type::EnableStreetPixels: return "EnableStreetPixels";
+  case Message::Type::UpdateStreetPixels: return "UpdateStreetPixels";
+  case Message::Type::ClearStreetPixels: return "ClearStreetPixels";
   case Message::Type::ShowChoosePositionMark: return "ShowChoosePositionMark";
   case Message::Type::SetKineticScrollEnabled: return "SetKineticScrollEnabled";
   case Message::Type::BlockTapEvents: return "BlockTapEvents";

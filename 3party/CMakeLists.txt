@@ -64,6 +64,10 @@ add_subdirectory(opening_hours)
 add_subdirectory(stb_image)
 add_subdirectory(succinct)
 
+add_subdirectory(sqlite)
+add_subdirectory(healpix)
+add_library(healpix::healpix ALIAS healpix)
+
 add_subdirectory(vulkan_wrapper)
 
 if (PLATFORM_DESKTOP)

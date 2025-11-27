@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/exploration_percentage"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    style="@style/FAB" app:icon="@null"
+    android:maxLines="1"
+    android:autoSizeTextType="uniform"
+    android:autoSizeMinTextSize="12sp"
+    android:ellipsize="middle"
+    android:text="Some very long country region name • 99.26 %"
+/>

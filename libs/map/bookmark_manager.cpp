@@ -531,6 +531,31 @@ void BookmarkManager::DeleteTrack(kml::TrackId trackId)
   m_tracks.erase(it);
 }
 
+BookmarkManager::TracksCollection::const_iterator BookmarkManager::GetTracks() const
+{
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+  return m_tracks.begin();
+}
+
+void BookmarkManager::ForEachTrack(std::function<void(Track const &)> const & fn) const
+{
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+  for (auto const & kv : m_tracks)
+    fn(*kv.second);
+}
+
+void BookmarkManager::ForEachTrackSortedByTimestamp(std::function<void(Track const &)> const & fn) const
+{
+  CHECK_THREAD_CHECKER(m_threadChecker, ());
+  std::vector<Track const *> tracks;
+  for (auto const & kv : m_tracks)
+    tracks.push_back(kv.second.get());
+  std::sort(tracks.begin(), tracks.end(),
+            [](Track const * a, Track const * b) { return a->GetData().m_timestamp < b->GetData().m_timestamp; });
+  for (auto const * track : tracks)
+    fn(*track);
+}
+
 void BookmarkManager::GetDirtyGroups(kml::GroupIdSet & dirtyGroups) const
 {
   CHECK_THREAD_CHECKER(m_threadChecker, ());
@@ -1843,9 +1868,9 @@ void BookmarkManager::SetCategoriesChangedCallback(CategoriesChangedCallback && 
   m_categoriesChangedCallback = std::move(callback);
 }
 
-void BookmarkManager::SetAsyncLoadingCallbacks(AsyncLoadingCallbacks && callbacks)
+void BookmarkManager::AddAsyncLoadingCallbacks(AsyncLoadingCallbacks && callbacks)
 {
-  m_asyncLoadingCallbacks = std::move(callbacks);
+  m_asyncLoadingCallbacks.emplace_back(std::move(callbacks));
 }
 
 bool BookmarkManager::AreSymbolSizesAcquired(BookmarkManager::OnSymbolSizesAcquiredCallback && callback)
@@ -2154,8 +2179,11 @@ void BookmarkManager::NotifyAboutStartAsyncLoading()
   GetPlatform().RunTask(Platform::Thread::Gui, [this]()
   {
     m_asyncLoadingInProgress = true;
-    if (m_asyncLoadingCallbacks.m_onStarted != nullptr)
-      m_asyncLoadingCallbacks.m_onStarted();
+    for (auto callbacks : m_asyncLoadingCallbacks)
+    {
+      if (callbacks.m_onStarted != nullptr)
+        callbacks.m_onStarted();
+    }
   });
 }
 
@@ -2191,8 +2219,11 @@ void BookmarkManager::NotifyAboutFinishAsyncLoading(KMLDataCollectionPtr && coll
     else
     {
       m_asyncLoadingInProgress = false;
-      if (m_asyncLoadingCallbacks.m_onFinished != nullptr)
-        m_asyncLoadingCallbacks.m_onFinished();
+      for (auto callbacks : m_asyncLoadingCallbacks)
+      {
+        if (callbacks.m_onFinished != nullptr)
+          callbacks.m_onFinished();
+      }
     }
   });
 }
@@ -2206,13 +2237,19 @@ void BookmarkManager::NotifyAboutFile(bool success, std::string const & filePath
   {
     if (success)
     {
-      if (m_asyncLoadingCallbacks.m_onFileSuccess != nullptr)
-        m_asyncLoadingCallbacks.m_onFileSuccess(filePath, isTemporaryFile);
+      for (auto callbacks : m_asyncLoadingCallbacks)
+      {
+        if (callbacks.m_onFileSuccess != nullptr)
+          callbacks.m_onFileSuccess(filePath, isTemporaryFile);
+      }
     }
     else
     {
-      if (m_asyncLoadingCallbacks.m_onFileError != nullptr)
-        m_asyncLoadingCallbacks.m_onFileError(filePath, isTemporaryFile);
+      for (auto callbacks : m_asyncLoadingCallbacks)
+      {
+        if (callbacks.m_onFileError != nullptr)
+          callbacks.m_onFileError(filePath, isTemporaryFile);
+      }
     }
   });
 }

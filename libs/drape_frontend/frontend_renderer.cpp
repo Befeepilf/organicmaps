@@ -11,6 +11,7 @@
 #include "drape_frontend/scenario_manager.hpp"
 #include "drape_frontend/screen_operations.hpp"
 #include "drape_frontend/screen_quad_renderer.hpp"
+#include "drape_frontend/street_pixel_renderer.hpp"
 #include "drape_frontend/user_mark_shapes.hpp"
 #include "drape_frontend/visual_params.hpp"
 
@@ -197,6 +198,14 @@ FrontendRenderer::FrontendRenderer(Params && params)
         ThreadsCommutator::ResourceUploadThread,
         make_unique_dp<CacheCirclesPackMessage>(pointsCount, CacheCirclesPackMessage::RoutePreview),
         MessagePriority::Normal);
+  });
+
+  m_streetPixelRenderer = make_unique_dp<StreetPixelRenderer>([this](uint32_t pointsCount)
+  {
+    m_commutator->PostMessage(
+      ThreadsCommutator::ResourceUploadThread,
+      make_unique_dp<CacheCirclesPackMessage>(pointsCount, CacheCirclesPackMessage::StreetPixel),
+      MessagePriority::Normal);
   });
 
   m_myPositionController =
@@ -747,6 +756,9 @@ void FrontendRenderer::AcceptMessage(ref_ptr<Message> message)
     case CacheCirclesPackMessage::GpsTrack:
       m_gpsTrackRenderer->AddRenderData(m_context, make_ref(m_gpuProgramManager), msg->AcceptRenderData());
       break;
+    case CacheCirclesPackMessage::StreetPixel:
+      m_streetPixelRenderer->AddRenderData(m_context, make_ref(m_gpuProgramManager), msg->AcceptRenderData());
+      break;
     case CacheCirclesPackMessage::RoutePreview:
       m_routeRenderer->AddPreviewRenderData(m_context, msg->AcceptRenderData(), make_ref(m_gpuProgramManager));
       break;
@@ -764,6 +776,27 @@ void FrontendRenderer::AcceptMessage(ref_ptr<Message> message)
   case Message::Type::ClearGpsTrackPoints:
   {
     m_gpsTrackRenderer->Clear();
+    break;
+  }
+
+  case Message::Type::EnableStreetPixels:
+  {
+    ref_ptr<EnableStreetPixelsMessage> msg = message;
+    m_streetPixelRenderer->SetEnabled(msg->IsEnabled());
+    m_forceUpdateScene = true;
+    break;
+  }
+
+  case Message::Type::UpdateStreetPixels:
+  {
+    ref_ptr<UpdateStreetPixelsMessage> msg = message;
+    m_streetPixelRenderer->UpdatePixels(msg->GetToAdd());
+    break;
+  }
+
+  case Message::Type::ClearStreetPixels:
+  {
+    m_streetPixelRenderer->Clear();
     break;
   }
 
@@ -1053,6 +1086,7 @@ void FrontendRenderer::UpdateContextDependentResources()
   }
 
   m_gpsTrackRenderer->Update();
+  m_streetPixelRenderer->Update();
 }
 
 void FrontendRenderer::FollowRoute(int preferredZoomLevel, int preferredZoomLevelIn3d, bool enableAutoZoom,
@@ -1427,6 +1461,9 @@ void FrontendRenderer::RenderScene(ScreenBase const & modelView, bool activeFram
     {
       m_gpsTrackRenderer->RenderTrack(m_context, make_ref(m_gpuProgramManager), modelView, GetCurrentZoom(),
                                       m_frameValues);
+      
+      m_streetPixelRenderer->Render(m_context, make_ref(m_gpuProgramManager), modelView, GetCurrentZoom(),
+                                    m_frameValues);
 
       if (m_selectionShape && (m_selectionShape->GetSelectedObject() == SelectionShape::OBJECT_USER_MARK ||
                                m_selectionShape->GetSelectedObject() == SelectionShape::OBJECT_TRACK))
@@ -2259,6 +2296,7 @@ void FrontendRenderer::OnContextDestroy()
   m_myPositionController->ResetRenderShape();
   m_routeRenderer->ClearContextDependentResources();
   m_gpsTrackRenderer->ClearRenderData();
+  m_streetPixelRenderer->ClearRenderData();
   m_trafficRenderer->ClearContextDependentResources();
   m_drapeApiRenderer->Clear();
   m_postprocessRenderer->ClearContextDependentResources();
@@ -2511,6 +2549,7 @@ void FrontendRenderer::UpdateScene(ScreenBase const & modelView)
   ResolveZoomLevel(modelView);
 
   m_gpsTrackRenderer->Update();
+  m_streetPixelRenderer->Update();
 
   auto removePredicate = [this](drape_ptr<RenderGroup> const & group)
   {

@@ -37,6 +37,8 @@ import app.organicmaps.sdk.bookmarks.data.KmlFileType;
 import app.organicmaps.sdk.bookmarks.data.PredefinedColors;
 import app.organicmaps.sdk.bookmarks.data.SortedBlock;
 import app.organicmaps.sdk.bookmarks.data.Track;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsManager;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsState;
 import app.organicmaps.sdk.search.BookmarkSearchListener;
 import app.organicmaps.sdk.search.SearchEngine;
 import app.organicmaps.util.Graphics;
@@ -113,6 +115,13 @@ public class BookmarksListFragment extends BaseMwmRecyclerFragment<ConcatAdapter
   @Nullable
   private Bundle mSavedInstanceState;
 
+  private final StreetPixelsManager.Callback mStreetPixelsCallback = (enabled, status, countryId) -> {
+    android.util.Log.d("BookmarksListFragment", "StreetPixelsState changed: enabled=" + enabled + ", status=" + status);
+    if (status == StreetPixelsState.Status.READY) {
+      getBookmarkListAdapter().notifyDataSetChanged();
+    }
+  };
+  
   @CallSuper
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState)
@@ -211,6 +220,9 @@ public class BookmarksListFragment extends BaseMwmRecyclerFragment<ConcatAdapter
     BookmarkManager.INSTANCE.addLoadingListener(this);
     BookmarkManager.INSTANCE.addSortingListener(this);
     BookmarkManager.INSTANCE.addSharingListener(this);
+
+    MwmApplication.from(requireContext()).getStreetPixelsManager().initialize();
+    StreetPixelsManager.registerCallback(mStreetPixelsCallback);
   }
 
   @Override
@@ -241,6 +253,7 @@ public class BookmarksListFragment extends BaseMwmRecyclerFragment<ConcatAdapter
     BookmarkManager.INSTANCE.removeLoadingListener(this);
     BookmarkManager.INSTANCE.removeSortingListener(this);
     BookmarkManager.INSTANCE.removeSharingListener(this);
+    StreetPixelsManager.unregisterCallback(mStreetPixelsCallback);
   }
 
   private void configureBookmarksListAdapter()

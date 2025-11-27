@@ -102,6 +102,8 @@ import app.organicmaps.sdk.location.LocationState;
 import app.organicmaps.sdk.location.SensorListener;
 import app.organicmaps.sdk.location.TrackRecorder;
 import app.organicmaps.sdk.maplayer.isolines.IsolinesState;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsManager;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsState;
 import app.organicmaps.sdk.routing.RouteMarkType;
 import app.organicmaps.sdk.routing.RoutingController;
 import app.organicmaps.sdk.routing.RoutingOptions;
@@ -118,6 +120,8 @@ import app.organicmaps.search.SearchActivity;
 import app.organicmaps.search.SearchFragment;
 import app.organicmaps.settings.DrivingOptionsActivity;
 import app.organicmaps.settings.SettingsActivity;
+import app.organicmaps.settings.MyAccountDialogFragment;
+import app.organicmaps.stats.ExploreStatsDialogFragment;
 import app.organicmaps.util.SharingUtils;
 import app.organicmaps.util.ThemeSwitcher;
 import app.organicmaps.util.ThemeUtils;
@@ -1167,6 +1171,11 @@ public class MwmActivity extends BaseMwmFragmentActivity
     }
   }
 
+  private void onStreetPixelsStateChanged(@NonNull StreetPixelsState type)
+  {
+    mMapButtonsViewModel.setStreetPixelsState(type);
+  }
+
   @Override
   protected void onNewIntent(Intent intent)
   {
@@ -1231,6 +1240,7 @@ public class MwmActivity extends BaseMwmFragmentActivity
     BookmarkManager.INSTANCE.addLoadingListener(this);
     RoutingController.get().attach(this);
     MwmApplication.from(getApplicationContext()).getIsolinesManager().attach(this::onIsolinesStateChanged);
+    MwmApplication.from(getApplicationContext()).getStreetPixelsManager().attach(this::onStreetPixelsStateChanged);
     LocationState.nativeSetListener(this);
     MwmApplication.from(this).getLocationHelper().addListener(this);
     mSearchController.attach(this);
@@ -1250,8 +1260,11 @@ public class MwmActivity extends BaseMwmFragmentActivity
       RoutingController.get().detach();
     }
     MwmApplication.from(getApplicationContext()).getIsolinesManager().detach();
+    MwmApplication.from(getApplicationContext()).getStreetPixelsManager().detach();
     mSearchController.detach();
     Utils.keepScreenOn(false, getWindow());
+
+    MapManager.nativeUnsubscribeOnCountryChanged();
 
     final String backUrl = Framework.nativeGetParsedBackUrl();
     if (!TextUtils.isEmpty(backUrl))
@@ -2496,6 +2509,8 @@ public class MwmActivity extends BaseMwmFragmentActivity
         items.add(new MenuBottomSheetItem(R.string.start_track_recording, R.drawable.ic_track_recording_off, -1,
                                           this::onTrackRecordingOptionSelected));
 
+      items.add(new MenuBottomSheetItem(R.string.my_account, R.drawable.ic_account, this::onMyAccountOptionSelected));
+      items.add(new MenuBottomSheetItem(R.string.explore_stats, R.drawable.ic_stats, this::onExploreStatsOptionSelected));
       items.add(new MenuBottomSheetItem(R.string.share_my_location, R.drawable.ic_share,
                                         this::onShareLocationOptionSelected));
 
@@ -2505,6 +2520,18 @@ public class MwmActivity extends BaseMwmFragmentActivity
       return items;
     }
     return null;
+  }
+
+  private void onMyAccountOptionSelected()
+  {
+    closeFloatingPanels();
+    MyAccountDialogFragment.show(getSupportFragmentManager());
+  }
+
+  private void onExploreStatsOptionSelected()
+  {
+    closeFloatingPanels();
+    ExploreStatsDialogFragment.show(getSupportFragmentManager());
   }
 
   @Override

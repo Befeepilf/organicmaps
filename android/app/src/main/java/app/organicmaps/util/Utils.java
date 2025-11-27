@@ -494,4 +494,78 @@ public class Utils
       return context.getString(R.string.app_site_url) + "donate/";
     return url;
   }
+
+  // Called from JNI
+  @Keep
+  @SuppressWarnings("unused")
+  public static void vibrate(long durationMs)
+  {
+    Activity topActivity = MwmApplication.sInstance.getTopActivity();
+    if (topActivity == null)
+      return;
+
+    android.os.Vibrator vibrator = (android.os.Vibrator) topActivity.getSystemService(android.content.Context.VIBRATOR_SERVICE);
+    if (vibrator == null)
+      return;
+
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+    {
+      android.os.VibrationEffect effect = android.os.VibrationEffect.createOneShot(durationMs, android.os.VibrationEffect.DEFAULT_AMPLITUDE);
+      vibrator.vibrate(effect);
+    }
+    else
+    {
+      //noinspection deprecation
+      vibrator.vibrate(durationMs);
+    }
+  }
+
+  // Called from JNI
+  @Keep
+  @SuppressWarnings("unused")
+  public static void vibratePattern(long[] durations, long[] delays)
+  {
+    Activity topActivity = MwmApplication.sInstance.getTopActivity();
+    if (topActivity == null)
+      return;
+
+    android.os.Vibrator vibrator = (android.os.Vibrator) topActivity.getSystemService(android.content.Context.VIBRATOR_SERVICE);
+    if (vibrator == null)
+      return;
+
+    try
+    {
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+      {
+        int count = durations.length;
+        // Build timing pattern: [wait, vibrate, wait, vibrate, ...]
+        // Initial wait = 0
+        long[] pattern = new long[count * 2];
+        pattern[0] = 0;
+        for (int i = 0; i < count; i++)
+        {
+          // vibrate duration
+          pattern[i * 2 + 1] = durations[i];
+          // delay before next vibration, except after last
+          if (i < count - 1)
+            pattern[i * 2 + 2] = delays[i];
+        }
+        android.os.VibrationEffect effect = android.os.VibrationEffect.createWaveform(pattern, -1);
+        vibrator.vibrate(effect);
+      }
+      else
+      {
+        // Fallback: only first vibration
+        if (durations.length > 0)
+        {
+          //noinspection deprecation
+          vibrator.vibrate(durations[0]);
+        }
+      }
+    }
+    catch (SecurityException se)
+    {
+      Logger.e(TAG, "Vibrate permission missing", se);
+    }
+  }
 }

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(organicmaps C CXX)
 
+find_package(OpenMP REQUIRED)
+
 set(SRC
   # JNI headers
   ../../../../../private.h
@@ -135,6 +137,9 @@ target_link_libraries(${PROJECT_NAME}
   GLESv2
   atomic
   z
+  # if(OpenMP_FOUND)
+  OpenMP::OpenMP_CXX
+  # endif()
 )
 
 #target_link_options(${PROJECT_NAME} PRIVATE "-fuse-ld=gold")

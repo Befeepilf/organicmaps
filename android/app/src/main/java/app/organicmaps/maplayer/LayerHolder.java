@@ -19,6 +19,8 @@ class LayerHolder extends RecyclerView.ViewHolder
   final MaterialTextView mTitle;
   @NonNull
   final View mNewMarker;
+  @NonNull
+  final View mProgress;
   @Nullable
   LayerBottomSheetItem mItem;
   @Nullable
@@ -29,6 +31,7 @@ class LayerHolder extends RecyclerView.ViewHolder
     super(root);
     mTitle = root.findViewById(R.id.name);
     mNewMarker = root.findViewById(R.id.marker);
+    mProgress = root.findViewById(R.id.progress);
     mButton = root.findViewById(R.id.btn);
     mButton.setOnClickListener(this::onItemClicked);
   }

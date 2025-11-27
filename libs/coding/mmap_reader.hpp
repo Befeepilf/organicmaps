@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 
 /// @TODO Add Windows support
@@ -18,7 +19,7 @@ public:
     Sequential
   };
 
-  explicit MmapReader(std::string const & fileName, Advice advice = Advice::Normal);
+  explicit MmapReader(std::string const & fileName, Advice advice = Advice::Normal, bool writable = false);
 
   uint64_t Size() const override;
   void Read(uint64_t pos, void * p, size_t size) const override;
@@ -26,6 +27,12 @@ public:
 
   /// Direct file/memory access
   uint8_t * Data() const;
+
+  template <typename T>
+  std::span<T> DataSpan() const
+  {
+    return {reinterpret_cast<T *>(Data() + m_offset), static_cast<std::size_t>(m_size / sizeof(T))};
+  }
 
 protected:
   // Used in special derived readers.

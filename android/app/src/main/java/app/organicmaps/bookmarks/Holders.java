@@ -18,6 +18,7 @@ import app.organicmaps.sdk.bookmarks.data.BookmarkInfo;
 import app.organicmaps.sdk.bookmarks.data.BookmarkManager;
 import app.organicmaps.sdk.bookmarks.data.IconClickListener;
 import app.organicmaps.sdk.bookmarks.data.Track;
+import app.organicmaps.sdk.maplayer.streetpixels.StreetPixelsManager;
 import app.organicmaps.util.Graphics;
 import app.organicmaps.util.UiUtils;
 import app.organicmaps.util.Utils;
@@ -333,6 +334,8 @@ public class Holders
     private final MaterialTextView mName;
     @NonNull
     private final MaterialTextView mDistance;
+    @NonNull
+    private final MaterialTextView mExplored;
 
     BookmarkViewHolder(@NonNull View itemView)
     {
@@ -340,6 +343,8 @@ public class Holders
       mIcon = itemView.findViewById(R.id.iv__bookmark_color);
       mName = itemView.findViewById(R.id.tv__bookmark_name);
       mDistance = itemView.findViewById(R.id.tv__bookmark_distance);
+      mExplored = itemView.findViewById(R.id.tv__bookmark_explored);
+      mMoreButton = itemView.findViewById(R.id.more);
     }
 
     @Override
@@ -377,6 +382,8 @@ public class Holders
     private final MaterialTextView mName;
     @NonNull
     private final MaterialTextView mDistance;
+    @NonNull
+    private final MaterialTextView mExplored;
     private final ShapeableImageView mMoreButton;
 
     TrackViewHolder(@NonNull View itemView)
@@ -385,6 +392,7 @@ public class Holders
       mIcon = itemView.findViewById(R.id.iv__bookmark_color);
       mName = itemView.findViewById(R.id.tv__bookmark_name);
       mDistance = itemView.findViewById(R.id.tv__bookmark_distance);
+      mExplored = itemView.findViewById(R.id.tv__bookmark_explored);
       mMoreButton = itemView.findViewById(R.id.more);
     }
 
@@ -402,6 +410,10 @@ public class Holders
       Drawable circle =
           Graphics.drawCircle(track.getColor(), R.dimen.track_circle_size, mIcon.getContext().getResources());
       mIcon.setImageDrawable(circle);
+
+      double fraction = MwmApplication.from(mIcon.getContext()).getStreetPixelsManager().getTrackExploredFraction(trackId);
+      int percent = (int) Math.round(fraction * 100);
+      mExplored.setText(percent + "%");
     }
 
     public void setMoreButtonClickListener(RecyclerClickListener listener)
